@@ -1,12 +1,18 @@
 package neural;
 
-import java.util.Random;
-
 public class Connection {
 	public double weight;
-	public double deltaWeight;
+	public double value;
+	public Neuron target;
+	public Neuron origin;
 	
-	public Connection() {
-		weight = (new Random()).nextDouble()-0.5d;
+	public Connection(Neuron t1, Neuron t2, double weight) {
+		this.weight = weight;
+		origin = t1;
+		target = t2;
+	}
+	
+	public void update() {
+		value = origin.value * weight;
 	}
 }

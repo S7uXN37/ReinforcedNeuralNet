@@ -1,99 +1,94 @@
 package neural;
 
+import java.util.ArrayList;
+
 public class NeuralNet {
-	private Layer[] layers;
-	private double m_error = 0D;
-	private double m_recentAverageError = 1D;
-	private double m_recentAverageErrorSmoothing = 0.5D;
+	private Gene[] genes;
 	
-	public NeuralNet(final int[] topology) {
-		int numLayers = topology.length;
-		layers = new Layer[numLayers];
+	private int[] inputInd;
+	private int[] outputInd;
+	
+	private Neuron[] neurons;
+	private Connection[] connections;
+	
+	public NeuralNet(int inputs, int outputs, Gene[] genome) {
+		genes = Gene.cleanUp(genome);
 		
-		for(int layerInd = 0; layerInd < numLayers; layerInd++) {
-			layers[layerInd] = new Layer(topology[layerInd]);
-			int nextLayerSize = layerInd == topology.length-1 ? 0 : topology[layerInd+1];
+		ArrayList<Integer> neur = new ArrayList<Integer>();
+		
+		inputInd = new int[inputs];
+		for (int n = 0; n < inputs; n++) {
+			inputInd[n] = n;
+			neur.add(n);
+		}
+		outputInd = new int[outputs];
+		for (int n = 0; n < outputs; n++) {
+			outputInd[n] = n + inputs;
+			neur.add(n+inputs);
+		}
+		
+		// create neurons according to genes
+		for (Gene g : genes) {
+			if (!g.active)
+				continue;
+			if (!neur.contains(g.in))
+				neur.add(g.in);
+			if (!neur.contains(g.out))
+				neur.add(g.out);
+		}
+		
+		neurons = new Neuron[neur.size()];
+		for (int d : neur) {
+			neurons[d] = new Neuron();
+			System.out.println("New Neuron: " + d);
+		}
+		
+		// create edges
+		ArrayList<Gene> conn = new ArrayList<Gene>();
+		for (Gene g : genes) {
+			if (!g.active)
+				continue;
+			conn.add(g);
+		}
+		
+		connections = new Connection[conn.size()];
+		for (int i = 0; i < connections.length; i++) {
+			Gene g = conn.get(i);
+			Neuron t1 = neurons[g.in];
+			Neuron t2 = neurons[g.out];
 			
-			for (int neuronInd = 0; neuronInd <= topology[layerInd]; neuronInd++) {
-				layers[layerInd].neurons[neuronInd] = new Neuron(nextLayerSize, neuronInd);
-				
-				if (neuronInd == topology[layerInd]) {
-					layers[layerInd].neurons[neuronInd].setOutput(1.0D);
-				}
-				
-				System.out.println("Made a neuron!");
-			}
+			connections[i] = new Connection(t1, t2, g.weight);
+			System.out.println("New Connection: " + g.in + "-" + g.out + ", " + g.weight);
+		}
+		
+		// add connections to neurons
+		for (Connection c : connections) {
+			c.target.in_conn.add(c);
 		}
 	}
 	
-	public void feedForward(final double[] input) {
-		assert (input.length == layers[0].neurons.length-1) : "Invalid size of input";
-		
+	public void tick(final double[] input) {
+		// put input into first neurons
 		for (int i = 0; i < input.length; i++) {
-			layers[0].neurons[i].setOutput(input[i]);
+			neurons[inputInd[i]].value = input[i];
 		}
-		
-		for (int layerNum = 1; layerNum < layers.length; layerNum++) {
-			Layer prevLayer = layers[layerNum - 1];
-			for (int n = 0; n < layers[layerNum].neurons.length - 1; n++) {
-				layers[layerNum].neurons[n].feedForward(prevLayer);
-			}
+		// update all neurons
+		for (Neuron n : neurons) {
+			n.update();
 		}
-	}
-	
-	public void backProp(final double[] target) {
-		// net error, as root mean square error
-		Layer outputLayer = layers[layers.length-1];
-		m_error = 0D;
-		
-		for (int n = 0; n < outputLayer.neurons.length - 1; n++) {
-			double d = target[n] - outputLayer.neurons[n].getOutputVal();
-			m_error += d * d;
-		}
-		m_error /= outputLayer.neurons.length - 1; // average error/neuron
-		m_error = Math.sqrt(m_error); // RMS
-		
-		m_recentAverageError = (m_recentAverageError * m_recentAverageErrorSmoothing + m_error) / (m_recentAverageErrorSmoothing + 1);
-		
-		// output layer gradients
-		
-		for (int n = 0; n < outputLayer.neurons.length - 1; n++) {
-			outputLayer.neurons[n].calcOutputGradients(target[n]);
-		}
-		
-		// gradients on hidden
-		
-		for (int layerNum = layers.length - 2; layerNum > 0; layerNum--) {
-			Layer hiddenLayer = layers[layerNum];
-			Layer nextLayer = layers[layerNum + 1];
-			
-			for (int n = 0; n < hiddenLayer.neurons.length; n++) {
-				hiddenLayer.neurons[n].calcHiddenGradients(nextLayer);
-			}
-		}
-		
-		// update weights
-		
-		for (int layerNum = layers.length - 1; layerNum > 0; layerNum--) {
-			Layer layer = layers[layerNum];
-			Layer prevLayer = layers[layerNum - 1];
-			
-			for (int n = 0; n < layer.neurons.length - 1; n++) {
-				layer.neurons[n].updateInputWeights(prevLayer);
-			}
+		// update all connections
+		for (Connection c : connections) {
+			c.update();
 		}
 	}
 	
-	public double[] getResults() {
-		double[] res = new double[layers[layers.length - 1].neurons.length - 1];
-		
-		for (int n = 0; n < res.length; n++) {
-			res[n] = layers[layers.length - 1].neurons[n].getOutputVal();
+	public double[] getOutput() {
+		// get out neurons
+		// arrange values in array
+		double[] out = new double[outputInd.length];
+		for (int i = 0; i < outputInd.length; i++) {
+			out[i] = neurons[outputInd[i]].value;
 		}
-		
-		return res;
-	}
-	public double getRecentAvgError() {
-		return m_recentAverageError;
+		return out;
 	}
 }

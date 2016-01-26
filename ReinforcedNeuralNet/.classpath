@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="lib/Slick2D/lib/jinput.jar"/>
+	<classpathentry kind="lib" path="lib/Slick2D/lib/lwjgl_util.jar"/>
+	<classpathentry kind="lib" path="lib/Slick2D/lib/lwjgl.jar"/>
+	<classpathentry kind="lib" path="lib/Slick2D/lib/slick.jar">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="ReinforcedNeuralNet/lib/Slick2D"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

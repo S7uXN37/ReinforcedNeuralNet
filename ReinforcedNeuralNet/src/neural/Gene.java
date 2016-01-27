@@ -7,11 +7,15 @@ public class Gene {
 	public boolean active;
 	public int innov;
 	
-	public Gene(int in, int out, double weight, boolean active, int innov) {
+	public Gene(int in, int out, double weight, boolean active) {
 		this.in = in;
 		this.out = out;
 		this.weight = weight;
 		this.active = active;
-		this.innov = innov;
+	}
+	
+	@Override
+	public String toString() {
+		return in + "-" + out + "/" + weight + "/" + (active ? 1 : 0);
 	}
 }

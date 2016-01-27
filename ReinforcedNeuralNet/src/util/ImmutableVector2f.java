@@ -258,6 +258,14 @@ public strictfp class ImmutableVector2f {
    public float getY() {
       return y;
    }
+   
+   public float getScreenX() {
+	   return x + 50;
+   }
+   
+   public float getScreenY() {
+	   return y + 50;
+   }
 
    /**
     * Returns the hashCode() for this ImmutableVector2f.

@@ -9,7 +9,7 @@ import util.ImmutableVector2f;
 public class Ant {
 	private static final float maxFoodLvl = 1000;
 	private static final float matureTime = 1;
-	private static final float reprodTime = 1500;
+	private static final float reprodTime = 5000;
 	
 	Gene[] genes;
 	NeuralNet net;
@@ -23,8 +23,7 @@ public class Ant {
 	boolean layEgg = false;
 	float timeUntilMature;
 	
-	public Ant (NeuralNet n, double speed, Vector2f initPos, Gene[] genome) {
-		net = n;
+	public Ant (Gene[] genome, double speed, Vector2f initPos) {
 		this.speed = speed;
 		foodLevel = maxFoodLvl;
 		position = new ImmutableVector2f(initPos);
@@ -32,10 +31,12 @@ public class Ant {
 		reproductionTime = reprodTime;
 		timeUntilEgg = reproductionTime;
 		timeUntilMature = matureTime;
+		net = new NeuralNet(2, 2, genes);
 	}
 	
 	public void pickupFood (float amount) {
 		foodLevel = Math.min(foodLevel + amount, maxFoodLvl);
+		timeUntilEgg -= amount;
 	}
 	
 	public void tick (Vector2f toFoodNorm, float deltaSec) {
@@ -62,16 +63,17 @@ public class Ant {
 		ImmutableVector2f dist = velocity.scale(deltaSec * (float) speed);
 		Vector2f newPos = position.add(dist).makeVector2f();
 		newPos.x = Math.min(newPos.x, AntSimulation.WIDTH);
+		newPos.x = Math.max(newPos.x, 0);
 		newPos.y = Math.min(newPos.y, AntSimulation.HEIGHT);
+		newPos.y = Math.max(newPos.y, 0);
 		
 		position = new ImmutableVector2f(newPos);
 		foodLevel -= dist.length();
-		timeUntilEgg -= dist.length();
+		foodLevel -= deltaSec * 10;
 	}
 
 	private void die() {
 		isAlive = false;
-		System.out.println("died");
 	}
 	
 	public boolean isMature() {

@@ -1,7 +1,6 @@
 package neural;
 
 import java.util.ArrayList;
-import java.util.Dictionary;
 import java.util.HashMap;
 
 public class NeuralNet {
@@ -41,7 +40,6 @@ public class NeuralNet {
 		neurons = new HashMap<Integer, Neuron>();
 		for (int nID : neur) {
 			neurons.put(nID, new Neuron());
-			System.out.println("New Neuron: " + nID);
 		}
 		
 		// create edges
@@ -59,7 +57,6 @@ public class NeuralNet {
 			Neuron t2 = neurons.get(g.out);
 			
 			connections.add(new Connection(t1, t2, g.weight));
-			System.out.println("New Connection: " + g.in + "-" + g.out + ", " + g.weight);
 		}
 		
 		// add connections to neurons

@@ -1,6 +1,8 @@
 package neural;
 
 import java.util.ArrayList;
+import java.util.Dictionary;
+import java.util.HashMap;
 
 public class NeuralNet {
 	private Gene[] genes;
@@ -8,12 +10,11 @@ public class NeuralNet {
 	private int[] inputInd;
 	private int[] outputInd;
 	
-	private Neuron[] neurons;
-	private Connection[] connections;
+	private HashMap<Integer, Neuron> neurons;
+	private ArrayList<Connection> connections;
 	
 	public NeuralNet(int inputs, int outputs, Gene[] genome) {
-		genes = Gene.cleanUp(genome);
-		
+		genes = genome;
 		ArrayList<Integer> neur = new ArrayList<Integer>();
 		
 		inputInd = new int[inputs];
@@ -37,10 +38,10 @@ public class NeuralNet {
 				neur.add(g.out);
 		}
 		
-		neurons = new Neuron[neur.size()];
-		for (int d : neur) {
-			neurons[d] = new Neuron();
-			System.out.println("New Neuron: " + d);
+		neurons = new HashMap<Integer, Neuron>();
+		for (int nID : neur) {
+			neurons.put(nID, new Neuron());
+			System.out.println("New Neuron: " + nID);
 		}
 		
 		// create edges
@@ -51,13 +52,13 @@ public class NeuralNet {
 			conn.add(g);
 		}
 		
-		connections = new Connection[conn.size()];
-		for (int i = 0; i < connections.length; i++) {
+		connections = new ArrayList<Connection>();
+		for (int i = 0; i < conn.size(); i++) {
 			Gene g = conn.get(i);
-			Neuron t1 = neurons[g.in];
-			Neuron t2 = neurons[g.out];
+			Neuron t1 = neurons.get(g.in);
+			Neuron t2 = neurons.get(g.out);
 			
-			connections[i] = new Connection(t1, t2, g.weight);
+			connections.add(new Connection(t1, t2, g.weight));
 			System.out.println("New Connection: " + g.in + "-" + g.out + ", " + g.weight);
 		}
 		
@@ -70,10 +71,10 @@ public class NeuralNet {
 	public void tick(final double[] input) {
 		// put input into first neurons
 		for (int i = 0; i < input.length; i++) {
-			neurons[inputInd[i]].value = input[i];
+			neurons.get(inputInd[i]).value = input[i];
 		}
 		// update all neurons
-		for (Neuron n : neurons) {
+		for (Neuron n : neurons.values()) {
 			n.update();
 		}
 		// update all connections
@@ -87,7 +88,7 @@ public class NeuralNet {
 		// arrange values in array
 		double[] out = new double[outputInd.length];
 		for (int i = 0; i < outputInd.length; i++) {
-			out[i] = neurons[outputInd[i]].value;
+			out[i] = neurons.get(outputInd[i]).value;
 		}
 		return out;
 	}

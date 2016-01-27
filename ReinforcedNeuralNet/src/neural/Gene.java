@@ -14,9 +14,4 @@ public class Gene {
 		this.active = active;
 		this.innov = innov;
 	}
-
-	public static Gene[] cleanUp(Gene[] genome) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

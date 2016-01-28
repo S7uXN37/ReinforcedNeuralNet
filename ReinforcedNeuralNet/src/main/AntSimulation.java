@@ -13,6 +13,7 @@ import org.newdawn.slick.SlickException;
 import org.newdawn.slick.geom.Vector2f;
 import neural.Gene;
 import util.ImmutableVector2f;
+import util.Util;
 
 public class AntSimulation extends BasicGame{
 	public static void main(String[] args) {
@@ -110,10 +111,12 @@ public class AntSimulation extends BasicGame{
 	
 	private static final int popSize = 50;
 	private static final int foodAmount = 200;
-	private static final float MUTATION_CHANCE = 1f;
-	private static final float SIM_SPEED = 20f;
+	private static final int INIT_MUTATIONS = 5;
+	private static final float MUTATION_CHANCE = 0.01f;
+	private static final float SIM_SPEED = 2f;
 	private static final Color BCKG_COLOR = Color.gray;
-	private static final Color ANT_COLOR = Color.blue;
+	private static final Color GOOD_ANT_COLOR = Color.blue;
+	private static final Color BAD_ANT_COLOR = Color.red;
 	private static final Color EGG_COLOR = Color.yellow;
 	private static final Color FOOD_COLOR = Color.green;
 	
@@ -123,6 +126,7 @@ public class AntSimulation extends BasicGame{
 	private ArrayList<Ant> ants = new ArrayList<Ant>();
 	private ArrayList<ImmutableVector2f> food = new ArrayList<ImmutableVector2f>();
 	private Random pseudo = new Random();
+	private float mostFoodPerSec = 0;
 	
 	public AntSimulation(String title) {
 		super(title);
@@ -150,10 +154,11 @@ public class AntSimulation extends BasicGame{
 			float y = a.position.getScreenY();
 			
 			if (a.isMature()) {
-				float dx = a.velocity.getScreenX() * 20;
-				float dy = a.velocity.getScreenY() * 20;
+				ImmutableVector2f v = new ImmutableVector2f(a.velocity.normalise());
+				float dx = v.getScreenX() * 20;
+				float dy = v.getScreenY() * 20;
 				
-				g.setColor(ANT_COLOR);
+				g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, (float) (a.foodCollected/a.aliveForSecs) / mostFoodPerSec));
 				g.fillOval(x, y, 20, 20);
 				g.fillOval(x+dx, y+dy, 10, 10);
 			} else {
@@ -180,7 +185,11 @@ public class AntSimulation extends BasicGame{
 					(float) pseudo.nextDouble() * WIDTH,
 					(float) pseudo.nextDouble() * HEIGHT
 			);
-			ants.add(mutate(new Ant(g, 50, pos), 1f));
+			Ant a = new Ant (g, 50, pos);
+			for (int m = 0; m < INIT_MUTATIONS; m++) {
+				a = mutate(a, 1f);
+			}
+			ants.add(a);
 		}
 		
 		// spawn food randomly
@@ -195,6 +204,7 @@ public class AntSimulation extends BasicGame{
 
 	@Override
 	public void update(GameContainer gc, int delta) throws SlickException {
+		mostFoodPerSec = 0;
 		for (int m = 0; m < ants.size(); m++) {
 			Ant a = ants.get(m);
 			
@@ -203,7 +213,12 @@ public class AntSimulation extends BasicGame{
 				
 				if (ants.size() == 0)
 					break;
+				
+				continue;
 			}
+			
+			if ((a.foodCollected/a.aliveForSecs) > mostFoodPerSec)
+				mostFoodPerSec = (a.foodCollected/a.aliveForSecs);
 			
 			if (a.layEgg) {
 				a.layEgg = false;
@@ -211,7 +226,7 @@ public class AntSimulation extends BasicGame{
 			}
 			
 			ImmutableVector2f closest = null;
-			float closestDist = Float.MAX_VALUE;
+			float closestDistSqr = Float.MAX_VALUE;
 			
 			for (int i = 0; i < food.size(); i++) {
 				Vector2f f = food.get(i).makeVector2f();
@@ -227,12 +242,13 @@ public class AntSimulation extends BasicGame{
 					
 					if (food.size() == 0)
 						break;
-				} else if (f.length() < closestDist) {
+				} else if (f.lengthSquared() < closestDistSqr) {
 					closest = new ImmutableVector2f(f);
+					closestDistSqr = f.lengthSquared();
 				}
 			}
 			
-			a.tick(closest.makeVector2f(), SIM_SPEED * delta/1000f);
+			a.tick(closest.makeVector2f().normalise(), SIM_SPEED * delta/1000f);
 		}
 	}
 }

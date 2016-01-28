@@ -8,6 +8,7 @@ import util.ImmutableVector2f;
 
 public class Ant {
 	private static final float maxFoodLvl = 1000;
+	private static final float FOOD_LOSS_PER_SEC = 100;
 	private static final float matureTime = 1;
 	private static final float reprodTime = 5000;
 	
@@ -22,6 +23,8 @@ public class Ant {
 	boolean isAlive = true;
 	boolean layEgg = false;
 	float timeUntilMature;
+	int foodCollected = 0;
+	float aliveForSecs = 0f;
 	
 	public Ant (Gene[] genome, double speed, Vector2f initPos) {
 		this.speed = speed;
@@ -37,6 +40,7 @@ public class Ant {
 	public void pickupFood (float amount) {
 		foodLevel = Math.min(foodLevel + amount, maxFoodLvl);
 		timeUntilEgg -= amount;
+		foodCollected++;
 	}
 	
 	public void tick (Vector2f toFoodNorm, float deltaSec) {
@@ -50,7 +54,10 @@ public class Ant {
 				(float) net.getOutput()[0],
 				(float) net.getOutput()[1]
 		};
-		velocity = new ImmutableVector2f(new Vector2f(v).normalise());
+		Vector2f newV = new Vector2f(v[0], v[1]);
+		if (newV.lengthSquared() > 1)
+			newV.normalise();
+		velocity = new ImmutableVector2f(newV);
 		
 		if (foodLevel <= 0)
 			die();
@@ -69,7 +76,8 @@ public class Ant {
 		
 		position = new ImmutableVector2f(newPos);
 		foodLevel -= dist.length();
-		foodLevel -= deltaSec * 10;
+		foodLevel -= deltaSec * FOOD_LOSS_PER_SEC;
+		aliveForSecs += deltaSec;
 	}
 
 	private void die() {

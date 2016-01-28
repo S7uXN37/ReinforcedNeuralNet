@@ -1,6 +1,7 @@
 package main;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -114,10 +115,10 @@ public class AntSimulation extends BasicGame{
 	private static final int INIT_MUTATIONS = 5;
 	private static final float MUTATION_CHANCE = 0.01f;
 	private static final float SIM_SPEED = 2f;
+	private static final float GEN_LENGTH = 20f;
 	private static final Color BCKG_COLOR = Color.gray;
 	private static final Color GOOD_ANT_COLOR = Color.blue;
 	private static final Color BAD_ANT_COLOR = Color.red;
-	private static final Color EGG_COLOR = Color.yellow;
 	private static final Color FOOD_COLOR = Color.green;
 	
 	public static final int WIDTH = 1200;
@@ -127,6 +128,7 @@ public class AntSimulation extends BasicGame{
 	private ArrayList<ImmutableVector2f> food = new ArrayList<ImmutableVector2f>();
 	private Random pseudo = new Random();
 	private float mostFoodPerSec = 0;
+	private float timeUntilNewGen = GEN_LENGTH;
 	
 	public AntSimulation(String title) {
 		super(title);
@@ -153,18 +155,13 @@ public class AntSimulation extends BasicGame{
 			float x = a.position.getScreenX();
 			float y = a.position.getScreenY();
 			
-			if (a.isMature()) {
-				ImmutableVector2f v = new ImmutableVector2f(a.velocity.normalise());
-				float dx = v.getScreenX() * 20;
-				float dy = v.getScreenY() * 20;
-				
-				g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, (float) (a.foodCollected/a.aliveForSecs) / mostFoodPerSec));
-				g.fillOval(x, y, 20, 20);
-				g.fillOval(x+dx, y+dy, 10, 10);
-			} else {
-				g.setColor(EGG_COLOR);
-				g.fillOval(x, y, 10, 10);
-			}
+			ImmutableVector2f v = new ImmutableVector2f(a.velocity.normalise());
+			float dx = v.getScreenX() * 20;
+			float dy = v.getScreenY() * 20;
+			
+			g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, (float) a.foodCollected / mostFoodPerSec));
+			g.fillOval(x, y, 20, 20);
+			g.fillOval(x+dx, y+dy, 10, 10);
 		}
 		
 	}
@@ -204,26 +201,16 @@ public class AntSimulation extends BasicGame{
 
 	@Override
 	public void update(GameContainer gc, int delta) throws SlickException {
+		if (timeUntilNewGen <= 0) {
+			nextGeneration();
+			timeUntilNewGen = GEN_LENGTH;
+		}
+		timeUntilNewGen -= delta*SIM_SPEED/1000f;
+		
 		mostFoodPerSec = 0;
-		for (int m = 0; m < ants.size(); m++) {
-			Ant a = ants.get(m);
-			
-			if (!a.isAlive) {
-				ants.remove(a);
-				
-				if (ants.size() == 0)
-					break;
-				
-				continue;
-			}
-			
-			if ((a.foodCollected/a.aliveForSecs) > mostFoodPerSec)
-				mostFoodPerSec = (a.foodCollected/a.aliveForSecs);
-			
-			if (a.layEgg) {
-				a.layEgg = false;
-				ants.add(mutate(a, MUTATION_CHANCE));
-			}
+		for (Ant a : ants) {			
+			if (a.foodCollected > mostFoodPerSec)
+				mostFoodPerSec = a.foodCollected;
 			
 			ImmutableVector2f closest = null;
 			float closestDistSqr = Float.MAX_VALUE;
@@ -249,6 +236,35 @@ public class AntSimulation extends BasicGame{
 			}
 			
 			a.tick(closest.makeVector2f().normalise(), SIM_SPEED * delta/1000f);
+		}
+	}
+	
+	public void nextGeneration () {
+		ants.sort(null);
+		Object[] sa = ants.toArray();
+		Ant[] sorted = new Ant[sa.length];
+		for (int i = 0; i < sa.length; i++) {
+			sorted[i] = (Ant) sa[i];
+		}
+		
+		Ant[] newAnts = new Ant[sorted.length];
+		int popForDel = (int) (newAnts.length/2f);
+		for (int i = 0; i < popForDel; i++) {
+			newAnts[i] = sorted[sorted.length-1-i];
+		}
+		for (int i = popForDel; i < newAnts.length; i++) {
+			newAnts[i] = mutate(newAnts[i-popForDel], MUTATION_CHANCE);
+		}
+		ants = new ArrayList<Ant>(newAnts.length);
+		for (int i = 0; i < newAnts.length; i++) {
+			ants.add(newAnts[i]);
+		}
+		for (Ant a : ants) {
+			Vector2f pos = new Vector2f(
+					(float) pseudo.nextDouble() * WIDTH,
+					(float) pseudo.nextDouble() * HEIGHT
+			);
+			a.position = new ImmutableVector2f(pos);
 		}
 	}
 }

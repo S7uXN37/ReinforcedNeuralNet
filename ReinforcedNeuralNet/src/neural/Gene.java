@@ -5,7 +5,6 @@ public class Gene {
 	public int out;
 	public double weight;
 	public boolean active;
-	public int innov;
 	
 	public Gene(int in, int out, double weight, boolean active) {
 		this.in = in;

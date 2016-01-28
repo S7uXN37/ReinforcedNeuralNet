@@ -1,54 +1,34 @@
 package main;
 
+import java.util.Comparator;
+
 import org.newdawn.slick.geom.Vector2f;
 
 import neural.Gene;
 import neural.NeuralNet;
 import util.ImmutableVector2f;
 
-public class Ant {
-	private static final float maxFoodLvl = 1000;
-	private static final float FOOD_LOSS_PER_SEC = 100;
-	private static final float matureTime = 1;
-	private static final float reprodTime = 5000;
-	
+public class Ant implements Comparable{	
 	Gene[] genes;
 	NeuralNet net;
 	double speed;
 	float reproductionTime;
-	float timeUntilEgg;
-	float foodLevel;
 	ImmutableVector2f velocity = new ImmutableVector2f(0, 0);
 	ImmutableVector2f position;
-	boolean isAlive = true;
-	boolean layEgg = false;
-	float timeUntilMature;
 	int foodCollected = 0;
-	float aliveForSecs = 0f;
 	
 	public Ant (Gene[] genome, double speed, Vector2f initPos) {
 		this.speed = speed;
-		foodLevel = maxFoodLvl;
 		position = new ImmutableVector2f(initPos);
 		genes = genome;
-		reproductionTime = reprodTime;
-		timeUntilEgg = reproductionTime;
-		timeUntilMature = matureTime;
 		net = new NeuralNet(2, 2, genes);
 	}
 	
 	public void pickupFood (float amount) {
-		foodLevel = Math.min(foodLevel + amount, maxFoodLvl);
-		timeUntilEgg -= amount;
-		foodCollected++;
+		foodCollected += amount;
 	}
 	
-	public void tick (Vector2f toFoodNorm, float deltaSec) {
-		timeUntilMature -= deltaSec;
-		
-		if (!isMature())
-			return;
-		
+	public void tick (Vector2f toFoodNorm, float deltaSec) {	
 		net.tick(new double[]{toFoodNorm.x, toFoodNorm.y});
 		float[] v = new float[]{
 				(float) net.getOutput()[0],
@@ -59,14 +39,6 @@ public class Ant {
 			newV.normalise();
 		velocity = new ImmutableVector2f(newV);
 		
-		if (foodLevel <= 0)
-			die();
-		
-		if (timeUntilEgg <= 0) {
-			layEgg = true;
-			timeUntilEgg = reproductionTime;
-		}
-		
 		ImmutableVector2f dist = velocity.scale(deltaSec * (float) speed);
 		Vector2f newPos = position.add(dist).makeVector2f();
 		newPos.x = Math.min(newPos.x, AntSimulation.WIDTH);
@@ -75,16 +47,18 @@ public class Ant {
 		newPos.y = Math.max(newPos.y, 0);
 		
 		position = new ImmutableVector2f(newPos);
-		foodLevel -= dist.length();
-		foodLevel -= deltaSec * FOOD_LOSS_PER_SEC;
-		aliveForSecs += deltaSec;
 	}
 
-	private void die() {
-		isAlive = false;
-	}
-	
-	public boolean isMature() {
-		return timeUntilMature <= 0;
+	/* (non-Javadoc)
+	 * @see java.lang.Comparable#compareTo(java.lang.Object)
+	 * Note: this comparator imposes orderings that are inconsistent with equals.
+	 */
+	@Override
+	public int compareTo(Object arg0) {
+		Ant o2 = (Ant) arg0;
+		if (this.foodCollected == o2.foodCollected)
+			return 0;
+		else
+			return this.foodCollected > o2.foodCollected ? 1 : -1;
 	}
 }

@@ -1,5 +1,6 @@
 package main;
 
+import java.awt.Font;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,6 +12,7 @@ import org.newdawn.slick.Color;
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.SlickException;
+import org.newdawn.slick.TrueTypeFont;
 import org.newdawn.slick.geom.Vector2f;
 import neural.Gene;
 import util.ImmutableVector2f;
@@ -22,6 +24,7 @@ public class AntSimulation extends BasicGame{
 			AntSimulation sim = new AntSimulation();
 			AppGameContainer appgc = new AppGameContainer(sim, WIDTH+100, HEIGHT+100, false);
 			appgc.setAlwaysRender(true);
+			appgc.setShowFPS(false);
 			appgc.start();
 		} catch (SlickException e) {
 			e.printStackTrace();
@@ -114,9 +117,10 @@ public class AntSimulation extends BasicGame{
 	private static final int foodAmount = 200;
 	private static final int INIT_MUTATIONS = 5;
 	private static final float MUTATION_CHANCE = 0.01f;
-	private static final float SIM_SPEED = 2f;
+	private static final float SIM_SPEED = 10f;
 	private static final float GEN_LENGTH = 20f;
 	private static final Color BCKG_COLOR = Color.gray;
+	private static final Color TEXT_COLOR = Color.white;
 	private static final Color GOOD_ANT_COLOR = Color.blue;
 	private static final Color BAD_ANT_COLOR = Color.red;
 	private static final Color FOOD_COLOR = Color.green;
@@ -129,6 +133,8 @@ public class AntSimulation extends BasicGame{
 	private Random pseudo = new Random();
 	private float mostFoodPerSec = 0;
 	private float timeUntilNewGen = GEN_LENGTH;
+	private TrueTypeFont ttf;
+	private int gen = 1;
 	
 	public AntSimulation(String title) {
 		super(title);
@@ -136,46 +142,20 @@ public class AntSimulation extends BasicGame{
 	public AntSimulation() {
 		this("Ant Simulation");
 	}
-
-	@Override
-	public void render(GameContainer gc, Graphics g) throws SlickException {
-		g.setColor(BCKG_COLOR);
-		g.fillRect(0, 0, WIDTH+100, HEIGHT+100);
-		g.setAntiAlias(true);
-		
-		for (ImmutableVector2f p : food) {
-			float x = p.getScreenX();
-			float y = p.getScreenY();
-			
-			g.setColor(FOOD_COLOR);
-			g.fillOval(x, y, 10, 10);
-		}
-		
-		for (Ant a : ants) {
-			float x = a.position.getScreenX();
-			float y = a.position.getScreenY();
-			
-			ImmutableVector2f v = new ImmutableVector2f(a.headPosition);
-			float hx = v.getScreenX();
-			float hy = v.getScreenY();
-			
-			g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, (float) a.foodCollected / mostFoodPerSec));
-			g.fillOval(x, y, Ant.bodyRadius*2, Ant.bodyRadius*2);
-			g.fillOval(hx, hy, Ant.headRadius*2, Ant.headRadius*2);
-		}
-		
-	}
-
+	
 	@Override
 	public void init(GameContainer gc) throws SlickException {
+		ttf = new TrueTypeFont(new Font("Courier New", Font.BOLD, 20), true);
+		
 		// spawn ants randomly
 		for (int i = 0; i < popSize; i++) {
 			Gene[] g = new Gene[]{
 					new Gene(0,2,0.5d,true),
 					new Gene(1,3,0.5d,true),
 					new Gene(1,2,0.5d,true),
-					new Gene(1,4,0.5d,true),
-					new Gene(4,2,0.5d,true),
+					new Gene(1,4,0.8d,true),
+					new Gene(0,4,0.2d,true),
+					new Gene(4,2,0.8d,true),
 					new Gene(0,3,0.5d,true)
 				};
 			Vector2f pos = new Vector2f(
@@ -197,6 +177,59 @@ public class AntSimulation extends BasicGame{
 			);
 			food.add(pos);
 		}
+	}
+	
+	@Override
+	public void render(GameContainer gc, Graphics g) throws SlickException {
+		g.setColor(BCKG_COLOR);
+		g.fillRect(0, 0, WIDTH+100, HEIGHT+100);
+		g.setAntiAlias(true);
+		
+		// draw food
+		for (ImmutableVector2f p : food) {
+			float x = p.getScreenX();
+			float y = p.getScreenY();
+			
+			g.setColor(FOOD_COLOR);
+			g.fillOval(x, y, 10, 10);
+		}
+		
+		int infoY = 10;
+		// draw ants
+		for (Ant a : ants) {
+			float x = a.position.getScreenX();
+			float y = a.position.getScreenY();
+			
+			ImmutableVector2f v = new ImmutableVector2f(a.headPosition);
+			float hx = v.getScreenX();
+			float hy = v.getScreenY();
+			
+			g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, (float) a.foodCollected / mostFoodPerSec));
+			g.fillOval(x, y, Ant.bodyRadius*2, Ant.bodyRadius*2);
+			g.fillOval(hx, hy, Ant.headRadius*2, Ant.headRadius*2);
+		}
+		
+		// draw FPS
+		g.setColor(TEXT_COLOR);
+		g.setFont(ttf);
+		g.drawString("FPS: " + gc.getFPS(), 10, infoY);
+		
+		// draw generation
+		g.drawString("GENERATION: " + gen, 150, infoY);
+		
+		// draw generation progress bar
+		g.setAntiAlias(false);
+		float perc = (GEN_LENGTH - timeUntilNewGen) / GEN_LENGTH;
+		int startX = 350;
+		int width = 500;
+		int height = 20;
+		int border = 5;
+		g.setColor(Color.darkGray);
+		g.fillRect(startX - border, infoY - border, width + 2*border, height + 2*border);
+		g.setColor(Color.lightGray);
+		g.fillRect(startX, infoY, width, height);
+		g.setColor(Color.green);
+		g.fillRect(startX, infoY, perc * width, height);
 	}
 
 	@Override
@@ -290,5 +323,7 @@ public class AntSimulation extends BasicGame{
 			a.position = new ImmutableVector2f(pos);
 			a.foodCollected = 0;
 		}
+		
+		gen++;
 	}
 }

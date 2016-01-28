@@ -1,21 +1,23 @@
 package main;
 
-import java.util.Comparator;
-
 import org.newdawn.slick.geom.Vector2f;
 
 import neural.Gene;
 import neural.NeuralNet;
 import util.ImmutableVector2f;
 
-public class Ant implements Comparable{	
+public class Ant implements Comparable<Ant>{
+	public static final float bodyRadius = 10f;
+	public static final float headRadius = 7.5f;
+	public static final float headDist = bodyRadius;
 	Gene[] genes;
 	NeuralNet net;
 	double speed;
 	float reproductionTime;
 	ImmutableVector2f velocity = new ImmutableVector2f(0, 0);
-	ImmutableVector2f position;
+	ImmutableVector2f position = new ImmutableVector2f(0, 0);
 	int foodCollected = 0;
+	public ImmutableVector2f headPosition = new ImmutableVector2f(0, 0);
 	
 	public Ant (Gene[] genome, double speed, Vector2f initPos) {
 		this.speed = speed;
@@ -38,6 +40,7 @@ public class Ant implements Comparable{
 		if (newV.lengthSquared() > 1)
 			newV.normalise();
 		velocity = new ImmutableVector2f(newV);
+		headPosition = new ImmutableVector2f(velocity.normalise().scale(headDist).add(position));
 		
 		ImmutableVector2f dist = velocity.scale(deltaSec * (float) speed);
 		Vector2f newPos = position.add(dist).makeVector2f();
@@ -54,8 +57,7 @@ public class Ant implements Comparable{
 	 * Note: this comparator imposes orderings that are inconsistent with equals.
 	 */
 	@Override
-	public int compareTo(Object arg0) {
-		Ant o2 = (Ant) arg0;
+	public int compareTo(Ant o2) {
 		if (this.foodCollected == o2.foodCollected)
 			return 0;
 		else

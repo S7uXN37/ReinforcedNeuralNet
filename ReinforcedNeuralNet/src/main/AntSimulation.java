@@ -155,13 +155,13 @@ public class AntSimulation extends BasicGame{
 			float x = a.position.getScreenX();
 			float y = a.position.getScreenY();
 			
-			ImmutableVector2f v = new ImmutableVector2f(a.velocity.normalise());
-			float dx = v.getScreenX() * 20;
-			float dy = v.getScreenY() * 20;
+			ImmutableVector2f v = new ImmutableVector2f(a.headPosition);
+			float hx = v.getScreenX();
+			float hy = v.getScreenY();
 			
 			g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, (float) a.foodCollected / mostFoodPerSec));
-			g.fillOval(x, y, 20, 20);
-			g.fillOval(x+dx, y+dy, 10, 10);
+			g.fillOval(x, y, Ant.bodyRadius*2, Ant.bodyRadius*2);
+			g.fillOval(hx, hy, Ant.headRadius*2, Ant.headRadius*2);
 		}
 		
 	}
@@ -216,10 +216,12 @@ public class AntSimulation extends BasicGame{
 			float closestDistSqr = Float.MAX_VALUE;
 			
 			for (int i = 0; i < food.size(); i++) {
-				Vector2f f = food.get(i).makeVector2f();
-				f.sub(a.position.makeVector2f());
+				Vector2f toBody = food.get(i).makeVector2f();
+				toBody.sub(a.position.makeVector2f());
+				Vector2f toHead = food.get(i).makeVector2f();
+				toHead.sub(a.headPosition.makeVector2f());
 				
-				if (f.length() < 10) {
+				if (toBody.length() < Ant.bodyRadius || toHead.length() < Ant.headRadius) {
 					a.pickupFood(1000);
 					ImmutableVector2f pos = new ImmutableVector2f(
 							(float) pseudo.nextDouble() * WIDTH,
@@ -229,9 +231,9 @@ public class AntSimulation extends BasicGame{
 					
 					if (food.size() == 0)
 						break;
-				} else if (f.lengthSquared() < closestDistSqr) {
-					closest = new ImmutableVector2f(f);
-					closestDistSqr = f.lengthSquared();
+				} else if (toBody.lengthSquared() < closestDistSqr) {
+					closest = new ImmutableVector2f(toBody);
+					closestDistSqr = toBody.lengthSquared();
 				}
 			}
 			

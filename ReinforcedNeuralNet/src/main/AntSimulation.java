@@ -1,7 +1,7 @@
 package main;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Random;
 
@@ -239,32 +239,54 @@ public class AntSimulation extends BasicGame{
 		}
 	}
 	
+	@SuppressWarnings("unchecked")
 	public void nextGeneration () {
+		// sort ants by foodCollected
 		ants.sort(null);
 		Object[] sa = ants.toArray();
 		Ant[] sorted = new Ant[sa.length];
 		for (int i = 0; i < sa.length; i++) {
 			sorted[i] = (Ant) sa[i];
 		}
-		
-		Ant[] newAnts = new Ant[sorted.length];
-		int popForDel = (int) (newAnts.length/2f);
+		// add the best 50%
+		ArrayList<Ant> newAnts = new ArrayList<Ant>();
+		int popForDel = (int) (sorted.length/2f);
 		for (int i = 0; i < popForDel; i++) {
-			newAnts[i] = sorted[sorted.length-1-i];
+			newAnts.add(sorted[sorted.length-1-i]);
 		}
-		for (int i = popForDel; i < newAnts.length; i++) {
-			newAnts[i] = mutate(newAnts[i-popForDel], MUTATION_CHANCE);
+		// make a list for reproducing ants, best ant has more entries
+		ArrayList<Ant> rep = new ArrayList<Ant>();
+		for (int i = 0; i < newAnts.size(); i++) {
+			for (int m = 0; m < newAnts.size()-i-1; m++) {
+				rep.add(newAnts.get(i));
+			}
 		}
-		ants = new ArrayList<Ant>(newAnts.length);
-		for (int i = 0; i < newAnts.length; i++) {
-			ants.add(newAnts[i]);
+		// shuffle list
+		for (int i = 0; i < rep.size(); i++) {
+			Random r = new Random();
+			int j = i + r.nextInt(rep.size() - i);
+			Ant jA = rep.get(j);
+			rep.set(j, rep.get(i));
+			rep.set(i, jA);
 		}
+		// make list to dequeue
+		ArrayDeque<Ant> reprod = new ArrayDeque<Ant>();
+		for (Ant a : rep) {
+			reprod.add(a);
+		}
+		// add more slightly mutated ants until desired population size is reached
+		while (newAnts.size() < popSize) {
+			newAnts.add( mutate(reprod.poll(), MUTATION_CHANCE) );
+		}
+		// overwrite existing ants
+		ants = (ArrayList<Ant>) newAnts.clone();
 		for (Ant a : ants) {
 			Vector2f pos = new Vector2f(
 					(float) pseudo.nextDouble() * WIDTH,
 					(float) pseudo.nextDouble() * HEIGHT
 			);
 			a.position = new ImmutableVector2f(pos);
+			a.foodCollected = 0;
 		}
 	}
 }

@@ -1,5 +1,6 @@
 package graphing;
 
+import java.awt.Font;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -13,6 +14,7 @@ import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.Input;
 import org.newdawn.slick.SlickException;
+import org.newdawn.slick.TrueTypeFont;
 import org.newdawn.slick.util.Log;
 
 public class Diagram extends BasicGame
@@ -25,6 +27,7 @@ public class Diagram extends BasicGame
 	private double yAxisOffset;
 	private double xRange;
 	private double yRange;
+	private TrueTypeFont font;
 	public static boolean isOpen = false;
 	
 	public Diagram(String gamename, Line[] lines, Text[] texts, double xAxisOffset, double yAxisOffset, double xRange, double yRange)
@@ -41,7 +44,7 @@ public class Diagram extends BasicGame
 
 	@Override
 	public void init(GameContainer gc) throws SlickException {
-		
+		font = new TrueTypeFont(new Font("Courier New", Font.BOLD, 20), true);
 	}
 
 	@Override
@@ -56,6 +59,7 @@ public class Diagram extends BasicGame
 		}
 		for(Text t:texts){
 			g.setColor(t.c);
+			g.setFont(font);
 			g.drawString(t.text, t.p.getX(), t.p.getY());
 		}
 		for (Graph gr : channels) {
@@ -168,10 +172,12 @@ public class Diagram extends BasicGame
 	
 	public static void addData(double[] xAxisValues, double[] yAxisValues, Color color, String graphName, int channel) {
 		Line[] newLines = createLinesFromData(xAxisValues, yAxisValues, diagram.xAxisOffset, diagram.yAxisOffset, diagram.xRange, diagram.yRange, color);
+		if (newLines == null)
+			return;
 		
 		Text[] newTexts = new Text[1];
 		for(int i=0;i<newTexts.length ;i++) {
-			newTexts[i] = new Text( new Point(3*(ORIGIN.x + diagram.lines[diagram.lines.length-1].p2.x)/4, ORIGIN.y-2*X_AXIS_LABEL_OFFSET), graphName, color);
+			newTexts[i] = new Text( new Point(channel*3*(ORIGIN.x + diagram.lines[0].p2.x)/4, ORIGIN.y-2*X_AXIS_LABEL_OFFSET), graphName, color);
 		}
 		
 		Graph g = new Graph(newLines, newTexts);
@@ -199,6 +205,8 @@ public class Diagram extends BasicGame
 			vals[i] = new Point( ORIGIN.x + (xAxisLength/xRange)*(inputs[i]-xAxisOffset),
 					ORIGIN.y + (yAxisLength/yRange)*(outputs[i]-yAxisOffset));
 		}
+		if (vals.length <= 0)
+			return null;
 		
 		Line[] connectingLines = new Line[vals.length-1];
 		for(int i=0;i<connectingLines.length ;i++) {

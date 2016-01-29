@@ -22,7 +22,9 @@ import neural.Gene;
 import util.ImmutableVector2f;
 import util.Util;
 
-public class AntSimulation extends BasicGame{
+public class AntSimulation extends BasicGame {
+	public boolean isRunning = true;
+
 	public static void main(String[] args) {
 		try {
 			AntSimulation sim = new AntSimulation();
@@ -31,7 +33,6 @@ public class AntSimulation extends BasicGame{
 			appgc.setShowFPS(false);
 			appgc.setForceExit(false);
 			appgc.start();
-			
 			sim.OnClose();
 		} catch (SlickException e) {
 			e.printStackTrace();
@@ -142,8 +143,8 @@ public class AntSimulation extends BasicGame{
 		Diagram.addData(xAxis, yMin, Color.red, "Min Food", 1);
 	}
 	
-	private static final int popSize = 50;
-	private static final int foodAmount = 200;
+	private static final int popSize = 5;
+	private static final int foodAmount = 500;
 	private static final int INIT_MUTATIONS = 5;
 	private static final float MUTATION_CHANCE = 0.01f;
 	private static final float SIM_SPEED = 10f;
@@ -179,17 +180,20 @@ public class AntSimulation extends BasicGame{
 	@Override
 	public void init(GameContainer gc) throws SlickException {
 		ttf = new TrueTypeFont(new Font("Courier New", Font.BOLD, 20), true);
+		gc.getInput().addKeyListener(new InputListener(this));
+		gc.getInput().addMouseListener(new InputListener(this));
 		
 		// spawn ants randomly
 		for (int i = 0; i < popSize; i++) {
 			Gene[] g = new Gene[]{
-					new Gene(0,2,0.5d,true),
-					new Gene(1,3,0.5d,true),
-					new Gene(1,2,0.5d,true),
-					new Gene(1,4,0.8d,true),
-					new Gene(0,4,0.2d,true),
-					new Gene(4,2,0.8d,true),
-					new Gene(0,3,0.5d,true)
+					new Gene(0,4,0.5d,true),
+					new Gene(1,5,0.5d,true),
+					new Gene(2,4,0.5d,true),
+					new Gene(3,5,0.5d,true),
+					new Gene(1,6,0.5d,true),
+					new Gene(6,4,0.5d,true),
+					new Gene(2,6,0.5d,true),
+					new Gene(6,5,0.5d,true)
 				};
 			Vector2f pos = new Vector2f(
 					(float) pseudo.nextDouble() * WIDTH,
@@ -267,6 +271,9 @@ public class AntSimulation extends BasicGame{
 
 	@Override
 	public void update(GameContainer gc, int delta) throws SlickException {
+		if (!isRunning)
+			return;
+			
 		if (timeUntilNewGen <= 0) {
 			nextGeneration();
 			timeUntilNewGen = GEN_LENGTH;
@@ -275,19 +282,33 @@ public class AntSimulation extends BasicGame{
 		
 		maxFood = Integer.MIN_VALUE;
 		minFood = Integer.MAX_VALUE;
-		for (Ant a : ants) {			
+		for (int i = 0; i < ants.size(); i++) {
+			Ant a = ants.get(i);
 			if (a.foodCollected > maxFood)
 				maxFood = a.foodCollected;
 			else if (a.foodCollected < minFood)
 				minFood = a.foodCollected;
 			
-			ImmutableVector2f closest = null;
-			float closestDistSqr = Float.MAX_VALUE;
+			ImmutableVector2f closestFood = null;
+			float closestFoodDistSqr = Float.MAX_VALUE;
+			ImmutableVector2f closestAnt = null;
+			float closestAntDistSqr = Float.MAX_VALUE;
 			
-			for (int i = 0; i < food.size(); i++) {
-				Vector2f toBody = food.get(i).makeVector2f();
+			for (int j = 0; j < ants.size(); j++) {
+				Ant a2 = ants.get(j);
+				if (i != j) {
+					ImmutableVector2f toAnt = a2.position.sub(a.position);
+					if (toAnt.lengthSquared() < closestAntDistSqr) {
+						closestAnt = toAnt;
+						closestAntDistSqr = toAnt.lengthSquared();
+					}
+				}
+			}
+			
+			for (int k = 0; k < food.size(); k++) {
+				Vector2f toBody = food.get(k).makeVector2f();
 				toBody.sub(a.position.makeVector2f());
-				Vector2f toHead = food.get(i).makeVector2f();
+				Vector2f toHead = food.get(k).makeVector2f();
 				toHead.sub(a.headPosition.makeVector2f());
 				
 				if (toBody.length() < Ant.bodyRadius || toHead.length() < Ant.headRadius) {
@@ -296,17 +317,18 @@ public class AntSimulation extends BasicGame{
 							(float) pseudo.nextDouble() * WIDTH,
 							(float) pseudo.nextDouble() * HEIGHT
 					);
-					food.set(i, pos);
+					food.set(k, pos);
 					
 					if (food.size() == 0)
 						break;
-				} else if (toBody.lengthSquared() < closestDistSqr) {
-					closest = new ImmutableVector2f(toBody);
-					closestDistSqr = toBody.lengthSquared();
+				} else if (toBody.lengthSquared() < closestFoodDistSqr) {
+					closestFood = new ImmutableVector2f(toBody);
+					closestFoodDistSqr = toBody.lengthSquared();
 				}
 			}
 			
-			a.tick(closest.makeVector2f().normalise(), SIM_SPEED * delta/1000f);
+			a.tick(closestFood.makeVector2f().normalise(), closestAnt.makeVector2f().normalise(),
+					SIM_SPEED * delta/1000f);
 		}
 	}
 	
@@ -326,7 +348,7 @@ public class AntSimulation extends BasicGame{
 		}
 		// count ants under (maxFood+minFood)/2;
 		int popForDel = 0;
-		int reqFood = (maxFood + minFood)/2;
+		int reqFood = 2000;
 		for (Ant a : ants) {
 			if (a.foodCollected < reqFood)
 				popForDel++;

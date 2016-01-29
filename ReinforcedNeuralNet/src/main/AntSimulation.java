@@ -39,6 +39,9 @@ public class AntSimulation extends BasicGame {
 		}
 	}
 	public static Ant mutate (Ant ant, float chance) {
+		if (ant == null)
+			return null;
+		
 		ArrayList<Gene> newGenes = new ArrayList<Gene>();
 		Random r = new Random();
 		if (r.nextDouble() < chance) {
@@ -143,10 +146,10 @@ public class AntSimulation extends BasicGame {
 		Diagram.addData(xAxis, yMin, Color.red, "Min Food", 1);
 	}
 	
-	private static final int popSize = 5;
-	private static final int foodAmount = 500;
-	private static final int INIT_MUTATIONS = 5;
-	private static final float MUTATION_CHANCE = 0.01f;
+	private static final int popSize = 20;
+	private static final int foodAmount = 200;
+	private static final int INIT_MUTATIONS = 2;
+	private static final float MUTATION_CHANCE = 0.0f;
 	private static final float SIM_SPEED = 10f;
 	private static final float GEN_LENGTH = 20f;
 	private static final Color BCKG_COLOR = Color.gray;
@@ -234,6 +237,8 @@ public class AntSimulation extends BasicGame {
 		int infoY = 10;
 		// draw ants
 		for (Ant a : ants) {
+			if (a == null)
+				continue;
 			float x = a.position.getScreenX();
 			float y = a.position.getScreenY();
 			
@@ -284,6 +289,10 @@ public class AntSimulation extends BasicGame {
 		minFood = Integer.MAX_VALUE;
 		for (int i = 0; i < ants.size(); i++) {
 			Ant a = ants.get(i);
+			if (a == null) {
+				ants.remove(i);
+				continue;
+			}
 			if (a.foodCollected > maxFood)
 				maxFood = a.foodCollected;
 			else if (a.foodCollected < minFood)
@@ -298,6 +307,9 @@ public class AntSimulation extends BasicGame {
 				Ant a2 = ants.get(j);
 				if (i != j) {
 					ImmutableVector2f toAnt = a2.position.sub(a.position);
+					if (toAnt.length() < Ant.bodyRadius*2) {
+						a.position = a.position.sub(Ant.bodyRadius*2 - toAnt.length());
+					}
 					if (toAnt.lengthSquared() < closestAntDistSqr) {
 						closestAnt = toAnt;
 						closestAntDistSqr = toAnt.lengthSquared();
@@ -346,11 +358,11 @@ public class AntSimulation extends BasicGame {
 		for (int i = 0; i < sa.length; i++) {
 			sorted[i] = (Ant) sa[i];
 		}
-		// count ants under (maxFood+minFood)/2;
+		// count unfit ants
 		int popForDel = 0;
 		int reqFood = 2000;
 		for (Ant a : ants) {
-			if (a.foodCollected < reqFood)
+			if (a.foodCollected < reqFood || a.foodCollected < maxFood - 3000)
 				popForDel++;
 		}
 		// add better-than-average ants to list
@@ -385,6 +397,8 @@ public class AntSimulation extends BasicGame {
 		// overwrite existing ants
 		ants = (ArrayList<Ant>) newAnts.clone();
 		for (Ant a : ants) {
+			if (a == null)
+				continue;
 			Vector2f pos = new Vector2f(
 					(float) pseudo.nextDouble() * WIDTH,
 					(float) pseudo.nextDouble() * HEIGHT

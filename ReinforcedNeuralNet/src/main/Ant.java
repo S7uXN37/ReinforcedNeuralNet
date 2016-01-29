@@ -23,15 +23,15 @@ public class Ant implements Comparable<Ant>{
 		this.speed = speed;
 		position = new ImmutableVector2f(initPos);
 		genes = genome;
-		net = new NeuralNet(4, 2, genes);
+		net = new NeuralNet(2, 2, genes);
 	}
 	
 	public void pickupFood (float amount) {
 		foodCollected += amount;
 	}
 	
-	public void tick (Vector2f toFoodNorm, Vector2f toAntNorm, float deltaSec) {	
-		net.tick(new double[]{toFoodNorm.x, toFoodNorm.y, toAntNorm.x, toAntNorm.y});
+	public void tick (Vector2f toFoodNorm, float deltaSec) {	
+		net.tick(new double[]{toFoodNorm.x, toFoodNorm.y});
 		float[] v = new float[]{
 				(float) net.getOutput()[0],
 				(float) net.getOutput()[1]

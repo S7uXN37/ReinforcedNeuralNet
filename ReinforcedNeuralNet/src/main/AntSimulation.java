@@ -150,7 +150,7 @@ public class AntSimulation extends BasicGame {
 	private static final int foodAmount = 200;
 	private static final int INIT_MUTATIONS = 2;
 	private static final float MUTATION_CHANCE = 0.0f;
-	private static final float SIM_SPEED = 10f;
+	private static final float SIM_SPEED = 20f;
 	private static final float GEN_LENGTH = 20f;
 	private static final Color BCKG_COLOR = Color.gray;
 	private static final Color TEXT_COLOR = Color.white;
@@ -189,14 +189,14 @@ public class AntSimulation extends BasicGame {
 		// spawn ants randomly
 		for (int i = 0; i < popSize; i++) {
 			Gene[] g = new Gene[]{
-					new Gene(0,4,0.5d,true),
-					new Gene(1,5,0.5d,true),
+					new Gene(0,2,1d,true),
+					new Gene(1,3,1d,true)/*,
 					new Gene(2,4,0.5d,true),
 					new Gene(3,5,0.5d,true),
 					new Gene(1,6,0.5d,true),
 					new Gene(6,4,0.5d,true),
 					new Gene(2,6,0.5d,true),
-					new Gene(6,5,0.5d,true)
+					new Gene(6,5,0.5d,true)*/
 				};
 			Vector2f pos = new Vector2f(
 					(float) pseudo.nextDouble() * WIDTH,
@@ -300,19 +300,13 @@ public class AntSimulation extends BasicGame {
 			
 			ImmutableVector2f closestFood = null;
 			float closestFoodDistSqr = Float.MAX_VALUE;
-			ImmutableVector2f closestAnt = null;
-			float closestAntDistSqr = Float.MAX_VALUE;
 			
 			for (int j = 0; j < ants.size(); j++) {
 				Ant a2 = ants.get(j);
 				if (i != j) {
 					ImmutableVector2f toAnt = a2.position.sub(a.position);
-					if (toAnt.length() < Ant.bodyRadius*2) {
-						a.position = a.position.sub(Ant.bodyRadius*2 - toAnt.length());
-					}
-					if (toAnt.lengthSquared() < closestAntDistSqr) {
-						closestAnt = toAnt;
-						closestAntDistSqr = toAnt.lengthSquared();
+					if (toAnt.length() < Ant.bodyRadius * 2) {
+						a.position = a.position.add(Ant.bodyRadius*2 - toAnt.length());
 					}
 				}
 			}
@@ -339,8 +333,7 @@ public class AntSimulation extends BasicGame {
 				}
 			}
 			
-			a.tick(closestFood.makeVector2f().normalise(), closestAnt.makeVector2f().normalise(),
-					SIM_SPEED * delta/1000f);
+			a.tick(closestFood.makeVector2f().normalise(), SIM_SPEED * delta/1000f);
 		}
 	}
 	

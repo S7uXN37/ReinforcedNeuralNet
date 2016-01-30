@@ -4,9 +4,11 @@ import java.util.ArrayList;
 
 public class Neuron {
 	public ArrayList<Connection> in_conn;
+	public int id;
 	public double value;
 	
-	public Neuron() {
+	public Neuron(int id) {
+		this.id = id;
 		in_conn = new ArrayList<Connection>();
 	}
 
@@ -22,6 +24,6 @@ public class Neuron {
 	}
 	
 	public static double transfer (double x) {
-		return Math.tanh(x);
+		return 1 / (1 + Math.pow(Math.E, -4.9 * x));
 	}
 }

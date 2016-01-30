@@ -2,32 +2,46 @@ package neural;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
 
 public class NeuralNet {
-	private Gene[] genes;
+	protected static HashMap<Integer, Gene> newInnovations;
+	
+	private ArrayList<Gene> genes;
 	
 	private int[] inputInd;
 	private int[] outputInd;
 	
 	private HashMap<Integer, Neuron> neurons;
+	private HashMap<Integer, ArrayList<Integer>> unconnectedNodes;
+	private HashMap<Integer, Gene> innovGeneMap;
 	private ArrayList<Connection> connections;
 	
+	private int highestNeuronInd = 0;
+	
 	public NeuralNet(int inputs, int outputs, Gene[] genome) {
-		genes = genome;
+		genes = new ArrayList<Gene>();
+		
+		for (Gene g : genome)
+			genes.add(g);
+		
 		ArrayList<Integer> neur = new ArrayList<Integer>();
 		
+		// set up two lists, inputInd and outputInd to keep references to which neurons are in the input and output layer respectively
 		inputInd = new int[inputs];
 		for (int n = 0; n < inputs; n++) {
-			inputInd[n] = n;
-			neur.add(n);
+			highestNeuronInd++;
+			inputInd[n] = highestNeuronInd;
+			neur.add(highestNeuronInd);
 		}
 		outputInd = new int[outputs];
 		for (int n = 0; n < outputs; n++) {
-			outputInd[n] = n + inputs;
-			neur.add(n+inputs);
+			highestNeuronInd++;
+			outputInd[n] = highestNeuronInd;
+			neur.add(highestNeuronInd);
 		}
 		
-		// create neurons according to genes
+		// create neurons according to genes, for each gene ensure both the in & out neurons are in neur
 		for (Gene g : genes) {
 			if (!g.active)
 				continue;
@@ -37,9 +51,10 @@ public class NeuralNet {
 				neur.add(g.out);
 		}
 		
+		// setup a HashMap neurons to hold references to them
 		neurons = new HashMap<Integer, Neuron>();
 		for (int nID : neur) {
-			neurons.put(nID, new Neuron());
+			neurons.put(nID, new Neuron(nID));
 		}
 		
 		// create edges
@@ -59,9 +74,44 @@ public class NeuralNet {
 			connections.add(new Connection(t1, t2, g.weight));
 		}
 		
-		// add connections to neurons
-		for (Connection c : connections) {
-			c.target.in_conn.add(c);
+		// create dictionary to hold all UNconnected nodes for every node
+		computeNodeConnectionMap();
+		
+		computeInnovGeneMap();
+	}
+	
+	private void computeNodeConnectionMap() {
+		unconnectedNodes = new HashMap<Integer, ArrayList<Integer>>();
+		
+		for (int id : neurons.keySet()) {
+			ArrayList<Integer> unconnected = new ArrayList<Integer>();
+			for (int idOther : neurons.keySet()) {
+				if (idOther != id) {
+					boolean foundConn = false;
+					for (Connection c : connections) {
+						if (c.originID == id && c.targetID == idOther) {
+							foundConn = true;
+							break;
+						} else if (c.originID == idOther && c.targetID == id) {
+							foundConn = true;
+							break;
+						}
+					}
+					
+					if (!foundConn) {
+						unconnected.add(idOther);
+					}
+				}
+			}
+			
+			unconnectedNodes.put(id, unconnected);
+		}
+	}
+	
+	private void computeInnovGeneMap () {
+		innovGeneMap = new HashMap<Integer, Gene>();
+		for (Gene g : genes) {
+			innovGeneMap.put(g.innov, g);
 		}
 	}
 	
@@ -70,13 +120,13 @@ public class NeuralNet {
 		for (int i = 0; i < input.length; i++) {
 			neurons.get(inputInd[i]).value = input[i];
 		}
-		// update all neurons
-		for (Neuron n : neurons.values()) {
-			n.update();
-		}
 		// update all connections
 		for (Connection c : connections) {
 			c.update();
+		}
+		// update all neurons
+		for (Neuron n : neurons.values()) {
+			n.update();
 		}
 	}
 	
@@ -88,5 +138,171 @@ public class NeuralNet {
 			out[i] = neurons.get(outputInd[i]).value;
 		}
 		return out;
+	}
+	
+	public void mutate() {
+		Random r = new Random();
+		// mutate connections
+		if (r.nextDouble() < 0.8d) {
+			for (Gene g : genes) {
+				if (r.nextDouble() < 0.9d) {
+					// TODO uniform perturbation
+				} else {
+					// new random value
+					g.weight = r.nextDouble() * 2 - 1d;
+				}
+			}
+		}
+		// add mutations
+		if (r.nextDouble() < 0.01d) {
+			mutateAddConnection(r);
+		} else if (r.nextDouble() < 0.1d) {
+			mutateAddNode(r);
+		}
+		
+		computeInnovGeneMap();
+		computeNodeConnectionMap();
+	}
+	
+	private void mutateAddConnection(Random r) {
+		Object[] keys = neurons.keySet().toArray();
+		int origin = (int) keys[r.nextInt(keys.length)];
+		
+		ArrayList<Integer> unconnected = unconnectedNodes.get(origin);
+		int unconnInd = r.nextInt(unconnected.size());
+		int target = unconnected.get(unconnInd);
+		
+		Gene newConnection = new Gene(origin, target, r.nextDouble()-0.5d, true);
+		genes.add(newConnection);
+		
+		connections.add(new Connection(neurons.get(origin), neurons.get(target), newConnection.weight));
+		
+		computeNodeConnectionMap();
+		computeInnovGeneMap();
+	}
+	
+	private void mutateAddNode(Random r) {
+		Gene toSplit = genes.get(r.nextInt(connections.size()));
+		highestNeuronInd++;
+		int newID = highestNeuronInd;
+		
+		Gene newGene1 = new Gene(toSplit.in, newID, 1d, true);
+		Gene newGene2 = new Gene(newID, toSplit.out, toSplit.weight, true);
+		toSplit.active = false;
+		genes.add(newGene1);
+		genes.add(newGene2);
+		
+		int connToRemove = -1;
+		for (int i = 0; i < connections.size(); i++) {
+			Connection c = connections.get(i);
+			if (c.originID == toSplit.in && c.targetID == toSplit.out) {
+				connToRemove = i;
+				break;
+			}
+		}
+		connections.remove(connToRemove);
+		
+		connections.add(new Connection(neurons.get(newGene1.in), neurons.get(newGene1.out), toSplit.weight));
+		connections.add(new Connection(neurons.get(newGene2.in), neurons.get(newGene2.out), toSplit.weight));
+		
+		computeNodeConnectionMap();
+		computeInnovGeneMap();
+	}
+	
+	public static ArrayList<Gene> crossOver(float f1, NeuralNet n1, float f2, NeuralNet n2, Random r) {
+		HashMap<Integer, Gene> geneMap1 = n1.innovGeneMap;
+		HashMap<Integer, Gene> geneMap2 = n2.innovGeneMap;
+		
+		ArrayList<Gene> newGenes = new ArrayList<Gene>();
+		ArrayList<Integer> availInnov = new ArrayList<Integer>();
+		for (int innov : geneMap1.keySet()) {
+			availInnov.add(innov);
+		}
+		for (int innov : geneMap2.keySet()) {
+			availInnov.add(innov);
+		}
+		
+		for (int innov : availInnov) {
+			Gene dominant = null;
+			boolean disabled = false;
+			if (geneMap1.containsKey(innov) && geneMap2.containsKey(innov)) {
+				// choose dominant gene randomly
+				boolean disabledInEither = (!geneMap1.get(innov).active) || (!geneMap2.get(innov).active);
+				if (r.nextDouble() < 0.5) {
+					dominant = geneMap1.get(innov);
+				} else {
+					dominant = geneMap2.get(innov);
+				}
+				
+				// 75%: disabled if disabled in either
+				if (disabledInEither && r.nextDouble() < 0.75d) {
+					dominant.active = false;
+					disabled = true;
+				}
+				
+				// 40%: inherit average
+				if (r.nextDouble() < 0.4d) {
+					dominant.weight = (geneMap1.get(innov).weight + geneMap2.get(innov).weight) / 2d;
+				}
+			} else {
+				// only choose if from better parent, if equal choose randomly
+				if (geneMap1.containsKey(innov) && f1 > f2) {
+					dominant = geneMap1.get(innov);
+				} else if (geneMap2.containsKey(innov) && f2 > f1) {
+					dominant = geneMap2.get(innov);
+				} else if (f1 == f2) {
+					if (r.nextDouble() < 0.5) {
+						if (geneMap1.containsKey(innov)) {
+							dominant = geneMap1.get(innov);
+						} else  if (geneMap2.containsKey(innov)) {
+							dominant = geneMap2.get(innov);
+						}
+					}
+				}
+			}
+			
+			if (dominant != null) {
+				if (!disabled && !dominant.active && r.nextDouble() < 0.25d)
+					dominant.active = true;
+				
+				newGenes.add(dominant);
+			}
+		}
+		
+		return newGenes;
+	}
+	
+	public double getDistanceTo (NeuralNet other) {
+		int nonMatching = 0;
+		int matching = 0;
+		double totWeightDiff = 0;
+		
+		ArrayList<Integer> innovLookedAt = new ArrayList<Integer>();
+		for (int innov : innovGeneMap.keySet()) {
+			innovLookedAt.add(innov);
+			
+			if (other.innovGeneMap.containsKey(innov)) {
+				double w1 = innovGeneMap.get(innov).weight;
+				double w2 = other.innovGeneMap.get(innov).weight;
+				totWeightDiff += Math.abs(w1 - w2);
+				matching++;
+			} else {
+				nonMatching++;
+			}
+		}
+		for (int innov : other.innovGeneMap.keySet()) {
+			if (innovLookedAt.contains(innov))
+				continue;
+			
+			if (!other.innovGeneMap.containsKey(innov)) {
+				nonMatching++;
+			}
+		}
+		
+		return 2 * nonMatching + 2 * (totWeightDiff / (double) matching);
+	}
+	
+	public static void nextGeneration() {
+		newInnovations = new HashMap<Integer, Gene>();
 	}
 }

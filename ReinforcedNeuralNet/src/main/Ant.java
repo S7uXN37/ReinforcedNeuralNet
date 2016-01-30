@@ -26,8 +26,8 @@ public class Ant implements Comparable<Ant>{
 		net = new NeuralNet(2, 2, genes);
 	}
 	
-	public void pickupFood (float amount) {
-		foodCollected += amount;
+	public void pickupFood () {
+		foodCollected++;
 	}
 	
 	public void tick (Vector2f toFoodNorm, float deltaSec) {	

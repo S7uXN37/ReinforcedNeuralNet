@@ -1,37 +1,39 @@
 package main;
 
+import org.newdawn.slick.Color;
+import org.newdawn.slick.GameContainer;
+import org.newdawn.slick.Graphics;
 import org.newdawn.slick.geom.Vector2f;
 
-import neural.Gene;
+import neural.ISimulated;
 import neural.NeuralNet;
 import util.ImmutableVector2f;
+import util.Util;
 
-public class Ant implements Comparable<Ant>{
+public class Ant extends ISimulated{
 	public static final float bodyRadius = 10f;
 	public static final float headRadius = 7.5f;
 	public static final float headDist = bodyRadius;
-	Gene[] genes;
-	NeuralNet net;
+	private static final Color GOOD_ANT_COLOR = Color.blue;
+	private static final Color BAD_ANT_COLOR = Color.red;
+	public static double maxFit;
+	public static double minFit;
+	
 	double speed;
-	float reproductionTime;
 	ImmutableVector2f velocity = new ImmutableVector2f(0, 0);
 	ImmutableVector2f position = new ImmutableVector2f(0, 0);
-	int foodCollected = 0;
 	public ImmutableVector2f headPosition = new ImmutableVector2f(0, 0);
 	
-	public Ant (Gene[] genome, double speed, Vector2f initPos) {
+	public Ant (NeuralNet n, double speed, Vector2f initPos) {
+		super(n);
 		this.speed = speed;
 		position = new ImmutableVector2f(initPos);
-		genes = genome;
-		net = new NeuralNet(2, 2, genes);
+		net = n;
 	}
 	
-	public void pickupFood () {
-		foodCollected++;
-	}
-	
-	public void tick (Vector2f toFoodNorm, float deltaSec) {	
-		net.tick(new double[]{toFoodNorm.x, toFoodNorm.y});
+	@Override
+	public void tick (double[] input, float deltaSec) {	
+		net.tick(input);
 		float[] v = new float[]{
 				(float) net.getOutput()[0],
 				(float) net.getOutput()[1]
@@ -52,15 +54,21 @@ public class Ant implements Comparable<Ant>{
 		position = new ImmutableVector2f(newPos);
 	}
 
-	/* (non-Javadoc)
-	 * @see java.lang.Comparable#compareTo(java.lang.Object)
-	 * Note: this comparator imposes orderings that are inconsistent with equals.
-	 */
 	@Override
-	public int compareTo(Ant o2) {
-		if (this.foodCollected == o2.foodCollected)
-			return 0;
-		else
-			return this.foodCollected > o2.foodCollected ? 1 : -1;
+	public void draw(GameContainer gc, Graphics g) {
+		float x = position.getScreenX();
+		float y = position.getScreenY();
+		
+		ImmutableVector2f v = new ImmutableVector2f(headPosition);
+		float hx = v.getScreenX();
+		float hy = v.getScreenY();
+		
+		g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, Util.lerp(minFit, maxFit, 0, 1, net.fitness)));
+		g.fillOval(x, y, Ant.bodyRadius*2, Ant.bodyRadius*2);
+		g.fillOval(hx, hy, Ant.headRadius*2, Ant.headRadius*2);
+	}
+	
+	public void pickupFood() {
+		net.fitness++;
 	}
 }

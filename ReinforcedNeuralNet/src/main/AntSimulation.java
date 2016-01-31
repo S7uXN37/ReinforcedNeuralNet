@@ -1,9 +1,7 @@
 package main;
 
 import java.awt.Font;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Random;
 
 import javax.management.InstanceAlreadyExistsException;
@@ -18,9 +16,9 @@ import org.newdawn.slick.TrueTypeFont;
 import org.newdawn.slick.geom.Vector2f;
 
 import graphing.Diagram;
-import neural.Gene;
+import neural.NeuralNet;
+import neural.Population;
 import util.ImmutableVector2f;
-import util.Util;
 
 public class AntSimulation extends BasicGame {
 	public boolean isRunning = true;
@@ -61,29 +59,23 @@ public class AntSimulation extends BasicGame {
 		Diagram.addData(xAxis, yMin, Color.red, "Min Food", 1);
 	}
 	
-	private static final int popSize = 20;
 	private static final int foodAmount = 200;
-	private static final int INIT_MUTATIONS = 2;
-	private static final float MUTATION_CHANCE = 0.0f;
 	private static final float SIM_SPEED = 20f;
 	private static final float GEN_LENGTH = 20f;
 	private static final Color BCKG_COLOR = Color.gray;
 	private static final Color TEXT_COLOR = Color.white;
-	private static final Color GOOD_ANT_COLOR = Color.blue;
-	private static final Color BAD_ANT_COLOR = Color.red;
 	private static final Color FOOD_COLOR = Color.green;
 	
 	public static final int WIDTH = 1200;
 	public static final int HEIGHT = 800;
 	
 	private ArrayList<Ant> ants = new ArrayList<Ant>();
+	private Population population;
 	private ArrayList<ImmutableVector2f> food = new ArrayList<ImmutableVector2f>();
 	private Random pseudo = new Random();
-	private int maxFood = 0;
-	private int minFood = 0;
 	private ArrayList<Integer> passedGenerations = new ArrayList<Integer>();
-	private ArrayList<Integer> maxFoodPerGen = new ArrayList<Integer>();
-	private ArrayList<Integer> minFoodPerGen = new ArrayList<Integer>();
+	private ArrayList<Double> maxFoodPerGen = new ArrayList<Double>();
+	private ArrayList<Double> minFoodPerGen = new ArrayList<Double>();
 	private float timeUntilNewGen = GEN_LENGTH;
 	private TrueTypeFont ttf;
 	private int gen = 1;
@@ -102,24 +94,8 @@ public class AntSimulation extends BasicGame {
 		gc.getInput().addMouseListener(new InputListener(this));
 		
 		// spawn ants randomly
-		for (int i = 0; i < popSize; i++) {
-			Gene[] g = new Gene[]{
-					new Gene(0,2,0.5d,true),
-					new Gene(1,3,0.5d,true)/*,
-					new Gene(2,4,0.5d,true),
-					new Gene(3,5,0.5d,true),
-					new Gene(1,6,0.5d,true),
-					new Gene(6,4,0.5d,true),
-					new Gene(2,6,0.5d,true),
-					new Gene(6,5,0.5d,true)*/
-				};
-			Vector2f pos = new Vector2f(
-					(float) pseudo.nextDouble() * WIDTH,
-					(float) pseudo.nextDouble() * HEIGHT
-			);
-			Ant a = new Ant (g, 50, pos);
-			ants.add(a);
-		}
+		population = new Population();
+		
 		
 		// spawn food randomly
 		for (int i = 0; i < foodAmount; i++) {
@@ -151,16 +127,8 @@ public class AntSimulation extends BasicGame {
 		for (Ant a : ants) {
 			if (a == null)
 				continue;
-			float x = a.position.getScreenX();
-			float y = a.position.getScreenY();
 			
-			ImmutableVector2f v = new ImmutableVector2f(a.headPosition);
-			float hx = v.getScreenX();
-			float hy = v.getScreenY();
-			
-			g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, (float) a.foodCollected / maxFood));
-			g.fillOval(x, y, Ant.bodyRadius*2, Ant.bodyRadius*2);
-			g.fillOval(hx, hy, Ant.headRadius*2, Ant.headRadius*2);
+			a.draw(gc, g);
 		}
 		
 		// draw FPS
@@ -197,18 +165,18 @@ public class AntSimulation extends BasicGame {
 		}
 		timeUntilNewGen -= delta*SIM_SPEED/1000f;
 		
-		maxFood = Integer.MIN_VALUE;
-		minFood = Integer.MAX_VALUE;
+		Ant.maxFit = Integer.MIN_VALUE;
+		Ant.minFit = Integer.MAX_VALUE;
 		for (int i = 0; i < ants.size(); i++) {
 			Ant a = ants.get(i);
 			if (a == null) {
 				ants.remove(i);
 				continue;
 			}
-			if (a.foodCollected > maxFood)
-				maxFood = a.foodCollected;
-			else if (a.foodCollected < minFood)
-				minFood = a.foodCollected;
+			if (a.net.fitness > Ant.maxFit)
+				Ant.maxFit = a.net.fitness;
+			else if (a.net.fitness < Ant.minFit)
+				Ant.minFit = a.net.fitness;
 			
 			ImmutableVector2f closestFood = null;
 			float closestFoodDistSqr = Float.MAX_VALUE;
@@ -231,11 +199,8 @@ public class AntSimulation extends BasicGame {
 				
 				if (toBody.length() < Ant.bodyRadius || toHead.length() < Ant.headRadius) {
 					a.pickupFood();
-					ImmutableVector2f pos = new ImmutableVector2f(
-							(float) pseudo.nextDouble() * WIDTH,
-							(float) pseudo.nextDouble() * HEIGHT
-					);
-					food.set(k, pos);
+					
+					food.set(k, getRandPos());
 					
 					if (food.size() == 0)
 						break;
@@ -245,73 +210,36 @@ public class AntSimulation extends BasicGame {
 				}
 			}
 			
-			a.tick(closestFood.makeVector2f().normalise(), SIM_SPEED * delta/1000f);
+			ImmutableVector2f vec = closestFood.normalise();
+			double[] input = new double[]{vec.x, vec.y};
+			a.tick(input, SIM_SPEED * delta/1000f);
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
-	public void nextGeneration () {
-		System.out.println("Generation " + gen + " ended. MaxFood="+maxFood + " minFood=" + minFood);
+	private void nextGeneration () {
+		System.out.println("Generation " + gen + " ended. MaxFood="+Ant.maxFit + " minFood=" + Ant.minFit);
 		passedGenerations.add(gen);
-		maxFoodPerGen.add(maxFood);
-		minFoodPerGen.add(minFood);
+		maxFoodPerGen.add(Ant.maxFit);
+		minFoodPerGen.add(Ant.minFit);
 		
-		// sort ants by foodCollected
-		ants.sort(null);
-		Object[] sa = ants.toArray();
-		Ant[] sorted = new Ant[sa.length];
-		for (int i = 0; i < sa.length; i++) {
-			sorted[i] = (Ant) sa[i];
-		}
-		// count unfit ants
-		int popForDel = 0;
-		int reqFood = 2000;
-		for (Ant a : ants) {
-			if (a.foodCollected < reqFood || a.foodCollected < maxFood - 3000)
-				popForDel++;
-		}
-		// add better-than-average ants to list
+		population.nextGeneration(pseudo);
+		getAntsFromPopulation();
+	}
+	
+	private void getAntsFromPopulation() {
 		ArrayList<Ant> newAnts = new ArrayList<Ant>();
-		for (int i = 0; i < sorted.length-popForDel; i++) {
-			newAnts.add(sorted[sorted.length-1-i]);
+		for (NeuralNet n : population.population) {
+			Ant a = new Ant(n, 50, getRandPos().makeVector2f());
+			newAnts.add(a);
 		}
-		// make a list for reproducing ants, best ant has more entries, such that one ant can replace the entire population
-		ArrayList<Ant> rep = new ArrayList<Ant>();
-		for (int i = 0; i < newAnts.size(); i++) {
-			for (int m = 0; m < popForDel-i; m++) {
-				rep.add(newAnts.get(i));
-			}
-		}
-		// shuffle list
-		for (int i = 0; i < rep.size(); i++) {
-			Random r = new Random();
-			int j = i + r.nextInt(rep.size() - i);
-			Ant jA = rep.get(j);
-			rep.set(j, rep.get(i));
-			rep.set(i, jA);
-		}
-		// make list to dequeue
-		ArrayDeque<Ant> reprod = new ArrayDeque<Ant>();
-		for (Ant a : rep) {
-			reprod.add(a);
-		}
-		// add more slightly mutated ants until desired population size is reached
-		while (newAnts.size() < popSize) {
-			newAnts.add( mutate(reprod.poll(), MUTATION_CHANCE) );
-		}
-		// overwrite existing ants
-		ants = (ArrayList<Ant>) newAnts.clone();
-		for (Ant a : ants) {
-			if (a == null)
-				continue;
-			Vector2f pos = new Vector2f(
-					(float) pseudo.nextDouble() * WIDTH,
-					(float) pseudo.nextDouble() * HEIGHT
-			);
-			a.position = new ImmutableVector2f(pos);
-			a.foodCollected = 0;
-		}
-		
-		gen++;
+		ants = newAnts;
+	}
+
+	private ImmutableVector2f getRandPos() {
+		ImmutableVector2f pos = new ImmutableVector2f(
+				(float) pseudo.nextDouble() * WIDTH,
+				(float) pseudo.nextDouble() * HEIGHT
+		);
+		return pos;
 	}
 }

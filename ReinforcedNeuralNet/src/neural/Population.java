@@ -3,15 +3,17 @@ package neural;
 import java.util.ArrayList;
 import java.util.Random;
 
-import org.w3c.dom.events.MutationEvent;
-
 public class Population {
 	private static final int specTarget = 10;
 	private static final int popSize = 50;
 	private float deltaT = 3.0f;
 	private final float dDeltaT = 0.3f;
-	private ArrayList<NeuralNet> population;
+	public ArrayList<NeuralNet> population;
 	private ArrayList<Species> species;
+	
+	public Population() {
+		// TODO add starting nets
+	}
 	
 	private void recalculateSpecies() {
 		for (NeuralNet member : population) {
@@ -43,6 +45,7 @@ public class Population {
 	}
 	
 	public void nextGeneration(Random r) {
+		species = new ArrayList<Species>();
 		double totFitness = 0d;
 		for (Species s : species) {
 			totFitness += s.getCombinedFitness();
@@ -65,6 +68,7 @@ public class Population {
 		NeuralNet.nextGeneration();
 		
 		mutate(r);
+		recalculateSpecies();
 	}
 
 	private void mutate(Random r) {

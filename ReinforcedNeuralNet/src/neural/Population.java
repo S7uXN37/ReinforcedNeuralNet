@@ -11,11 +11,43 @@ public class Population {
 	public ArrayList<NeuralNet> population;
 	private ArrayList<Species> species;
 	
-	public Population() {
-		// TODO add starting nets
+	public Population(Random r) {
+		NeuralNet.nextGeneration();
+		population = new ArrayList<NeuralNet>();
+		
+		int MIN_NODES = NeuralNet.INPUTS + NeuralNet.OUTPUTS;
+		int MAX_NODES = MIN_NODES + 2;
+		
+		// add starting nets
+		for (int i = 0; i < popSize; i++) {
+			ArrayList<Gene> genes = new ArrayList<Gene>();
+			
+			int nodes = (int) (r.nextDouble() * (MAX_NODES - MIN_NODES + 1) + MIN_NODES);
+			for (int node = 0; node < NeuralNet.INPUTS; node++) {
+				int out = node + NeuralNet.INPUTS;
+				double weight = r.nextDouble() - 0.5d;
+				
+				Gene g = new Gene(node, out, weight, true);
+				genes.add(g);
+			}
+			
+			Gene[] genome = new Gene[genes.size()];
+			for (int n = 0; n < genome.length; n++) {
+				genome[n] = genes.get(n);
+			}
+			
+			NeuralNet net = new NeuralNet(genome);
+			while (net.neurons.size() < nodes) {
+				net.mutateAddNode(r);
+				net.mutateAddConnection(r);
+				net.mutateAddConnection(r);
+			}
+			
+			population.add(net);
+		}
 	}
 	
-	private void recalculateSpecies() {
+	private void recalculateSpecies(boolean stop) {
 		for (NeuralNet member : population) {
 			boolean assigned = false;
 			for (NeuralNet n : population) {
@@ -34,18 +66,16 @@ public class Population {
 			}
 		}
 		
-		if (species.size() > specTarget) {
+		if (species.size() > specTarget && !stop) {
 			deltaT -= dDeltaT;
-		} else if (species.size() < specTarget) {
+			recalculateSpecies(true);
+		} else if (species.size() < specTarget && !stop) {
 			deltaT += dDeltaT;
-		} else
-			return;
-		
-		recalculateSpecies();
+			recalculateSpecies(true);
+		}
 	}
 	
 	public void nextGeneration(Random r) {
-		species = new ArrayList<Species>();
 		double totFitness = 0d;
 		for (Species s : species) {
 			totFitness += s.getCombinedFitness();
@@ -68,7 +98,14 @@ public class Population {
 		NeuralNet.nextGeneration();
 		
 		mutate(r);
-		recalculateSpecies();
+		recalculateSpecies(false);
+	}
+	
+	public void firstGeneration(Random r) {
+		species = new ArrayList<Species>();
+		NeuralNet.nextGeneration();
+		
+		recalculateSpecies(false);
 	}
 
 	private void mutate(Random r) {

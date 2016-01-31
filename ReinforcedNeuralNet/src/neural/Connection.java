@@ -21,4 +21,9 @@ public class Connection {
 	public void update() {
 		value = origin.value * weight;
 	}
+	
+	@Override
+	public String toString() {
+		return originID + "-" + targetID + "/" + weight;
+	}
 }

@@ -20,12 +20,12 @@ public class Gene {
 			if (g.in == in && g.out == out) {
 				found = true;
 				this.innov = innov;
+				break;
 			}
 		}
 		if (!found) {
 			globalInnov++;
 			this.innov = globalInnov;
-		} else {
 			NeuralNet.newInnovations.put(innov, this);
 		}
 	}

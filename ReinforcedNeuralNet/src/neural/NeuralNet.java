@@ -14,15 +14,15 @@ public class NeuralNet {
 	private int[] inputInd;
 	private int[] outputInd;
 	
-	private HashMap<Integer, Neuron> neurons;
+	protected HashMap<Integer, Neuron> neurons;
 	private HashMap<Integer, ArrayList<Integer>> unconnectedNodes;
 	private HashMap<Integer, Gene> innovGeneMap;
 	private ArrayList<Connection> connections;
 	
-	private int highestNeuronInd = 0;
+	private int highestNeuronInd = -1;
 	
 	public int species = -1;
-	public double fitness; // TODO assign in Ant
+	public double fitness;
 	
 	public NeuralNet(Gene[] genome) {
 		genes = new ArrayList<Gene>();
@@ -172,11 +172,24 @@ public class NeuralNet {
 		computeNodeConnectionMap();
 	}
 	
-	private void mutateAddConnection(Random r) {
+	protected void mutateAddConnection(Random r) {
 		Object[] keys = neurons.keySet().toArray();
 		int origin = (int) keys[r.nextInt(keys.length)];
 		
 		ArrayList<Integer> unconnected = unconnectedNodes.get(origin);
+		if (unconnected.size() == 0) {
+			boolean found = false;
+			for (int i = 0; i < keys.length; i++) {
+				unconnected = unconnectedNodes.get((int) keys[i]);
+				if (unconnected.size() > 0) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				return;
+			}
+		}
 		int unconnInd = r.nextInt(unconnected.size());
 		int target = unconnected.get(unconnInd);
 		
@@ -189,21 +202,29 @@ public class NeuralNet {
 		computeInnovGeneMap();
 	}
 	
-	private void mutateAddNode(Random r) {
-		Gene toSplit = genes.get(r.nextInt(connections.size()));
+	protected void mutateAddNode(Random r) {
+		Connection toSplit = connections.get(r.nextInt(connections.size()));
 		highestNeuronInd++;
 		int newID = highestNeuronInd;
+		neurons.put(newID, new Neuron(newID));
 		
-		Gene newGene1 = new Gene(toSplit.in, newID, 1d, true);
-		Gene newGene2 = new Gene(newID, toSplit.out, toSplit.weight, true);
-		toSplit.active = false;
+		Gene newGene1 = new Gene(toSplit.originID, newID, 1d, true);
+		Gene newGene2 = new Gene(newID, toSplit.targetID, toSplit.weight, true);
+
+		for (Gene g : genes) {
+			if (g.in == toSplit.originID && g.out == toSplit.targetID) {
+				g.active = false;
+				break;
+			}
+		}
+		
 		genes.add(newGene1);
 		genes.add(newGene2);
 		
 		int connToRemove = -1;
 		for (int i = 0; i < connections.size(); i++) {
 			Connection c = connections.get(i);
-			if (c.originID == toSplit.in && c.targetID == toSplit.out) {
+			if (c.originID == toSplit.originID && c.targetID == toSplit.targetID) {
 				connToRemove = i;
 				break;
 			}
@@ -218,6 +239,7 @@ public class NeuralNet {
 	}
 	
 	public static ArrayList<Gene> crossOver(NeuralNet n1, NeuralNet n2, Random r) {
+		// TODO definitely review
 		HashMap<Integer, Gene> geneMap1 = n1.innovGeneMap;
 		HashMap<Integer, Gene> geneMap2 = n2.innovGeneMap;
 		

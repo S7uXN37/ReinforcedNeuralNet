@@ -94,8 +94,9 @@ public class AntSimulation extends BasicGame {
 		gc.getInput().addMouseListener(new InputListener(this));
 		
 		// spawn ants randomly
-		population = new Population();
-		
+		population = new Population(pseudo);
+		population.firstGeneration(pseudo);
+		getAntsFromPopulation();
 		
 		// spawn food randomly
 		for (int i = 0; i < foodAmount; i++) {
@@ -224,6 +225,14 @@ public class AntSimulation extends BasicGame {
 		
 		population.nextGeneration(pseudo);
 		getAntsFromPopulation();
+		Ant.maxFit = 0;
+		Ant.minFit = 0;
+		
+		for (NeuralNet n : population.population) {
+			n.fitness = 0;
+		}
+		
+		gen++;
 	}
 	
 	private void getAntsFromPopulation() {

@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.Random;
 
 public class NeuralNet {
+	public static final int INPUTS = 2;
+	public static final int OUTPUTS = 2;
 	protected static HashMap<Integer, Gene> newInnovations;
 	
 	private ArrayList<Gene> genes;
@@ -19,7 +21,10 @@ public class NeuralNet {
 	
 	private int highestNeuronInd = 0;
 	
-	public NeuralNet(int inputs, int outputs, Gene[] genome) {
+	public int species = -1;
+	public double fitness; // TODO assign in Ant
+	
+	public NeuralNet(Gene[] genome) {
 		genes = new ArrayList<Gene>();
 		
 		for (Gene g : genome)
@@ -28,14 +33,14 @@ public class NeuralNet {
 		ArrayList<Integer> neur = new ArrayList<Integer>();
 		
 		// set up two lists, inputInd and outputInd to keep references to which neurons are in the input and output layer respectively
-		inputInd = new int[inputs];
-		for (int n = 0; n < inputs; n++) {
+		inputInd = new int[INPUTS];
+		for (int n = 0; n < INPUTS; n++) {
 			highestNeuronInd++;
 			inputInd[n] = highestNeuronInd;
 			neur.add(highestNeuronInd);
 		}
-		outputInd = new int[outputs];
-		for (int n = 0; n < outputs; n++) {
+		outputInd = new int[OUTPUTS];
+		for (int n = 0; n < OUTPUTS; n++) {
 			highestNeuronInd++;
 			outputInd[n] = highestNeuronInd;
 			neur.add(highestNeuronInd);
@@ -140,13 +145,16 @@ public class NeuralNet {
 		return out;
 	}
 	
-	public void mutate() {
-		Random r = new Random();
+	public void mutate(Random r) {
 		// mutate connections
 		if (r.nextDouble() < 0.8d) {
 			for (Gene g : genes) {
 				if (r.nextDouble() < 0.9d) {
-					// TODO uniform perturbation
+					// uniform perturbation = add uniformly-distributed random value
+					double newWeight = g.weight + r.nextDouble() * 0.2 - 0.1d;
+					newWeight = Math.min(1d, newWeight);
+					newWeight = Math.max(-1d, newWeight);
+					g.weight = newWeight;
 				} else {
 					// new random value
 					g.weight = r.nextDouble() * 2 - 1d;
@@ -209,9 +217,12 @@ public class NeuralNet {
 		computeInnovGeneMap();
 	}
 	
-	public static ArrayList<Gene> crossOver(float f1, NeuralNet n1, float f2, NeuralNet n2, Random r) {
+	public static ArrayList<Gene> crossOver(NeuralNet n1, NeuralNet n2, Random r) {
 		HashMap<Integer, Gene> geneMap1 = n1.innovGeneMap;
 		HashMap<Integer, Gene> geneMap2 = n2.innovGeneMap;
+		
+		double f1 = n1.fitness;
+		double f2 = n2.fitness;
 		
 		ArrayList<Gene> newGenes = new ArrayList<Gene>();
 		ArrayList<Integer> availInnov = new ArrayList<Integer>();

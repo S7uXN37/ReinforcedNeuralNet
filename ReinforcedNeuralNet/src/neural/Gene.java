@@ -9,6 +9,8 @@ public class Gene {
 	public int innov;
 	
 	public Gene(int in, int out, double weight, boolean active) {
+		assert (in != out) : "Illegal Gene Configuration";
+		
 		this.in = in;
 		this.out = out;
 		this.weight = weight;

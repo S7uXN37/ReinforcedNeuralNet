@@ -61,6 +61,11 @@ public class NeuralNet {
 			neurons.put(nID, new Neuron(nID));
 		}
 		
+		for (int key : neurons.keySet()) {
+			if (key > highestNeuronInd)
+				highestNeuronInd = key;
+		}
+		
 		// create edges
 		ArrayList<Gene> conn = new ArrayList<Gene>();
 		for (Gene g : genes) {
@@ -172,6 +177,8 @@ public class NeuralNet {
 	}
 	
 	protected void mutateAddConnection(Random r) {
+		computeNodeConnectionMap();
+		
 		Object[] keys = neurons.keySet().toArray();
 		int origin = (int) keys[r.nextInt(keys.length)];
 		
@@ -205,6 +212,7 @@ public class NeuralNet {
 		Connection toSplit = connections.get(r.nextInt(connections.size()));
 		highestNeuronInd++;
 		int newID = highestNeuronInd;
+		assert !(neurons.containsKey(newID)) : "Illegal neuron state";
 		neurons.put(newID, new Neuron(newID));
 		
 		Gene newGene1 = new Gene(toSplit.originID, newID, 1d, true);

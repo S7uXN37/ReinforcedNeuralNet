@@ -12,7 +12,6 @@ public class Population {
 	private ArrayList<Species> species;
 	
 	public Population(Random r) {
-		NeuralNet.nextGeneration();
 		population = new ArrayList<NeuralNet>();
 		
 		int MIN_NODES = NeuralNet.INPUTS + NeuralNet.OUTPUTS;
@@ -95,7 +94,6 @@ public class Population {
 		}
 		
 		population = totOffspring;
-		NeuralNet.nextGeneration();
 		
 		mutate(r);
 		resetSpecies();
@@ -111,7 +109,6 @@ public class Population {
 
 	public void firstGeneration(Random r) {
 		species = new ArrayList<Species>();
-		NeuralNet.nextGeneration();
 		
 		resetSpecies();
 		recalculateSpecies(false);

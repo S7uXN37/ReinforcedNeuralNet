@@ -14,20 +14,7 @@ public class Gene {
 		this.weight = weight;
 		this.active = active;
 		
-		boolean found = false;
-		for (int innov : NeuralNet.newInnovations.keySet()) {
-			Gene g = NeuralNet.newInnovations.get(innov);
-			if (g.in == in && g.out == out) {
-				found = true;
-				this.innov = innov;
-				break;
-			}
-		}
-		if (!found) {
-			globalInnov++;
-			this.innov = globalInnov;
-			NeuralNet.newInnovations.put(innov, this);
-		}
+		innov = (in + "-" + out).hashCode();
 	}
 	
 	@Override

@@ -209,6 +209,9 @@ public class NeuralNet {
 	}
 	
 	protected void mutateAddNode(Random r) {
+		if (connections.size() <= 0)
+			return;
+		
 		Connection toSplit = connections.get(r.nextInt(connections.size()));
 		highestNeuronInd++;
 		int newID = highestNeuronInd;

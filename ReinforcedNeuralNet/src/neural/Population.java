@@ -75,6 +75,7 @@ public class Population {
 	}
 	
 	public void nextGeneration(Random r) {
+		// TODO too many bad organisms survive, maybe possible to eliminate bad species altogether
 		double totFitness = 0d;
 		for (Species s : species) {
 			totFitness += s.getCombinedFitness();

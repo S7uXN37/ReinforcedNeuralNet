@@ -98,13 +98,22 @@ public class Population {
 		NeuralNet.nextGeneration();
 		
 		mutate(r);
+		resetSpecies();
 		recalculateSpecies(false);
 	}
 	
+	private void resetSpecies() {
+		species = new ArrayList<Species>();
+		for (NeuralNet n : population) {
+			n.species = -1;
+		}
+	}
+
 	public void firstGeneration(Random r) {
 		species = new ArrayList<Species>();
 		NeuralNet.nextGeneration();
 		
+		resetSpecies();
 		recalculateSpecies(false);
 	}
 

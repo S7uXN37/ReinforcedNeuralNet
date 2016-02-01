@@ -239,7 +239,11 @@ public class NeuralNet {
 	}
 	
 	public static ArrayList<Gene> crossOver(NeuralNet n1, NeuralNet n2, Random r) {
-		// TODO definitely review
+		// TODO definitely review:
+		// still have things like 4-4
+		// maybe innov as hash, so no two identical genes get confused because they evolved independently
+		n1.computeInnovGeneMap();
+		n2.computeInnovGeneMap();
 		HashMap<Integer, Gene> geneMap1 = n1.innovGeneMap;
 		HashMap<Integer, Gene> geneMap2 = n2.innovGeneMap;
 		
@@ -252,7 +256,8 @@ public class NeuralNet {
 			availInnov.add(innov);
 		}
 		for (int innov : geneMap2.keySet()) {
-			availInnov.add(innov);
+			if (!availInnov.contains(innov))
+				availInnov.add(innov);
 		}
 		
 		for (int innov : availInnov) {

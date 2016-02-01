@@ -88,6 +88,7 @@ public class Population {
 			}
 		}
 		int missingNets = popSize - totOffspring.size();
+		assert species.size() > 0 : "No Species found";
 		ArrayList<NeuralNet> offspring = species.get(r.nextInt(species.size())).reproduce(missingNets, r);
 		for (NeuralNet n : offspring) {
 			totOffspring.add(n);
@@ -159,7 +160,7 @@ class Species {
 			double avgFitness = getCombinedFitness() / members.size();
 			for (double d = 0; fitParents.size() < 2; d += 0.1d) {
 				for (NeuralNet n : members) {
-					if (n.fitness > avgFitness - d) {
+					if (n.fitness >= avgFitness - d) {
 						fitParents.add(n);
 					}
 				}

@@ -7,7 +7,6 @@ public class Connection {
 	public Neuron origin;
 	public int targetID, originID;
 	
-	
 	public Connection(Neuron t1, Neuron t2, double weight) {
 		this.weight = weight;
 		origin = t1;

@@ -24,6 +24,7 @@ public class Neuron {
 	}
 	
 	public static double transfer (double x) {
+		System.out.println("Transfer: " + x);
 		return 1 / (1 + Math.pow(Math.E, -4.9 * x));
 	}
 }

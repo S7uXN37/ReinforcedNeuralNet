@@ -24,7 +24,8 @@ public class Neuron {
 	}
 	
 	public static double transfer (double x) {
-		System.out.println("Transfer: " + x);
-		return 1 / (1 + Math.pow(Math.E, -4.9 * x));
+		double y = 1 / (1 + Math.pow(Math.E, -4.9 * x)) * 2 - 1;
+		System.out.println("Transfered: " + x + " to: " + y);
+		return y;
 	}
 }

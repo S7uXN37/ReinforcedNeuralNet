@@ -246,8 +246,6 @@ public class NeuralNet {
 	}
 	
 	public static ArrayList<Gene> crossOver(NeuralNet n1, NeuralNet n2, Random r) {
-		// TODO definitely review:
-		// still have things like 4-4
 		n1.computeInnovGeneMap();
 		n2.computeInnovGeneMap();
 		HashMap<Integer, Gene> geneMap1 = n1.innovGeneMap;

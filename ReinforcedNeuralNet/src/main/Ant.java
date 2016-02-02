@@ -56,12 +56,11 @@ public class Ant extends ISimulated{
 
 	@Override
 	public void draw(GameContainer gc, Graphics g) {
-		float x = position.getScreenX();
-		float y = position.getScreenY();
+		float x = position.getScreenX() - bodyRadius;
+		float y = position.getScreenY() - bodyRadius;
 		
-		ImmutableVector2f v = new ImmutableVector2f(headPosition);
-		float hx = v.getScreenX();
-		float hy = v.getScreenY();
+		float hx = headPosition.getScreenX();
+		float hy = headPosition.getScreenY();
 		
 		g.setColor(Util.colorLerp(BAD_ANT_COLOR, GOOD_ANT_COLOR, Util.lerp(minFit, maxFit, 0, 1, net.fitness)));
 		g.fillOval(x, y, Ant.bodyRadius*2, Ant.bodyRadius*2);

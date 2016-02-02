@@ -13,10 +13,11 @@ public class NeuralNet {
 	private int[] inputInd;
 	private int[] outputInd;
 	
-	protected HashMap<Integer, Neuron> neurons;
+	public HashMap<Integer, Neuron> neurons;
+	
 	private HashMap<Integer, ArrayList<Integer>> unconnectedNodes;
 	private HashMap<Integer, Gene> innovGeneMap;
-	private ArrayList<Connection> connections;
+	public ArrayList<Connection> connections;
 	
 	private int highestNeuronInd = -1;
 	

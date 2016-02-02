@@ -16,8 +16,8 @@ public class InputListener implements org.newdawn.slick.InputListener {
 
 	@Override
 	public void mouseClicked(int button, int x, int y, int clickCount) {
-		// TODO Auto-generated method stub
-
+		if (button == Input.MOUSE_LEFT_BUTTON)
+			sim.click(x, y);
 	}
 
 	@Override
@@ -72,7 +72,10 @@ public class InputListener implements org.newdawn.slick.InputListener {
 	public void keyPressed(int key, char c) {
 		switch (key) {
 		case Input.KEY_SPACE:
-			sim.isRunning = !sim.isRunning;
+			sim.space();
+			break;
+		case Input.KEY_ESCAPE:
+			sim.close();
 			break;
 		}
 	}

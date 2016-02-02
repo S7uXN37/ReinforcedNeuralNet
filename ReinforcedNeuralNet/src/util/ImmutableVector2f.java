@@ -3,6 +3,8 @@ package util;
 import org.newdawn.slick.geom.Vector2f;
 import org.newdawn.slick.util.FastTrig;
 
+import main.AntSimulation;
+
 /**
  * A two dimensional immutable vector. Intended to be a drop-in replacement for
  * Vector2f where immutability is required.
@@ -260,11 +262,11 @@ public strictfp class ImmutableVector2f {
    }
    
    public float getScreenX() {
-	   return x + 50;
+	   return x + AntSimulation.GAME_AREA_BORDER;
    }
    
    public float getScreenY() {
-	   return y + 50;
+	   return y + AntSimulation.GAME_AREA_BORDER;
    }
 
    /**

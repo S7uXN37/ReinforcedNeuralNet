@@ -5,8 +5,6 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.management.InstanceAlreadyExistsException;
-
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.BasicGame;
 import org.newdawn.slick.Color;
@@ -43,9 +41,7 @@ public class Diagram extends BasicGame
 	}
 
 	@Override
-	public void init(GameContainer gc) throws SlickException {
-		font = new TrueTypeFont(new Font("Courier New", Font.BOLD, 20), true);
-	}
+	public void init(GameContainer gc) throws SlickException {	}
 
 	@Override
 	public void update(GameContainer gc, int i) throws SlickException {}
@@ -53,6 +49,9 @@ public class Diagram extends BasicGame
 	@Override
 	public void render(GameContainer gc, Graphics g) throws SlickException
 	{
+		if (font == null) {
+			font = new TrueTypeFont(new Font("Courier New", Font.BOLD, 20), true);
+		}
 		for(Line l:lines){
 			g.setColor(l.c);
 			g.drawLine(l.p1.getX(), l.p1.getY(), l.p2.getX(), l.p2.getY());
@@ -120,8 +119,11 @@ public class Diagram extends BasicGame
 	
 	public static boolean setup(
 			String xAxisName, String yAxisName,
-			double xAxisOffset, double yAxisOffset, double xRange, double yRange, String title) throws InstanceAlreadyExistsException
+			double xAxisOffset, double yAxisOffset, double xRange, double yRange, String title)
 	{
+		if (diagram != null)
+			return false;
+		
 		Log.setVerbose(false);
 		Line[] lines = new Line[6];
 		
@@ -155,9 +157,6 @@ public class Diagram extends BasicGame
 		t[7] = new Text( new Point( ORIGIN.x-Y_AXIS_LABEL_OFFSET, yAxis.p2.y) , ""+(int)((yAxisOffset+yRange)*100) /100f, TEXT_COLOR);
 		
 		// create instance and start
-		if(diagram!=null){
-			throw new InstanceAlreadyExistsException();
-		}
 		diagram = new Diagram(title, lines, t, xAxisOffset, yAxisOffset, xRange, yRange);
 		Thread renderLoop = new Thread(new Runnable(){
 			@Override
@@ -187,46 +186,34 @@ public class Diagram extends BasicGame
 		
 		diagram.channels.set(channel, g);
 	}
-
-	/**
-	 * @param inputs array of input values
-	 * @param outputs array of corresponding outputs
-	 * @param xAxisOffset offset of the whole x-axis (for graphs not starting at 0)
-	 * @param yAxisOffset offset of the whole y-axis (for graphs not starting at 0)
-	 * @param color color of the graph
-	 * @return
-	 */
+	
 	private static Line[] createLinesFromData(double[] inputs,
 			double[] outputs, double xAxisOffset, double yAxisOffset,
 			double xRange, double yRange, Color color) {
 		Point[] vals = new Point[inputs.length];
 		
-		for(int i=0;i<vals.length ;i++){
-			vals[i] = new Point( ORIGIN.x + (xAxisLength/xRange)*(inputs[i]-xAxisOffset),
-					ORIGIN.y + (yAxisLength/yRange)*(outputs[i]-yAxisOffset));
+		for(int i = 0; i < vals.length; i++){
+			vals[i] = new Point(
+					ORIGIN.x + (xAxisLength/xRange)*(inputs[i]-xAxisOffset),
+					ORIGIN.y + (yAxisLength/yRange)*(outputs[i]-yAxisOffset)
+			);
 		}
+		
+		return createLinesFromData(vals, color);
+	}
+	
+	private static Line[] createLinesFromData(Point[] vals, Color color)
+	{
 		if (vals.length <= 0)
 			return null;
 		
 		Line[] connectingLines = new Line[vals.length-1];
-		for(int i=0;i<connectingLines.length ;i++) {
-			connectingLines[i] = new Line(vals[i],vals[i+1], color);
+		for(int i = 0; i < connectingLines.length; i++) {
+			connectingLines[i] = new Line(vals[i],vals[i + 1], color);
 		}
 		
 		return connectingLines;
 	}
-	
-//	private static double arrayToRange (double[] arr) {
-//		double smX = arr[0];
-//		double laX = arr[0];
-//		for (double d : arr) {
-//			if (d < smX)
-//				smX = d;
-//			if (d > laX)
-//				laX = d;
-//		}
-//		return laX - smX;
-//	}
 }
 
 class Graph {

@@ -4,8 +4,6 @@ import java.awt.Font;
 import java.util.ArrayList;
 import java.util.Random;
 
-import javax.management.InstanceAlreadyExistsException;
-
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.BasicGame;
 import org.newdawn.slick.Color;
@@ -38,11 +36,8 @@ public class AntSimulation extends BasicGame {
 	}
 	
 	public void OnClose() {
-		try {
-			Diagram.setup("Gen", "Food", 0, 0, gen+2, 40, "Ants");
-		} catch (InstanceAlreadyExistsException e) {
-			e.printStackTrace();
-		}
+		Diagram.setup("Gen", "Food", 0, 0, gen+2, 40, "Ants");
+		
 		double[] xAxis = new double[passedGenerations.size()];
 		for (int i = 0; i < xAxis.length; i++) {
 			xAxis[i] = passedGenerations.get(i);

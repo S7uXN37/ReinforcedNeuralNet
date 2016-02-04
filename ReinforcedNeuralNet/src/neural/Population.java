@@ -79,11 +79,11 @@ public class Population {
 		// TODO too many bad organisms survive, maybe possible to eliminate bad species altogether
 		double totFitness = 0d;
 		for (Species s : species) {
-			totFitness += s.getCombinedFitness();
+			totFitness += s.getCombinedFitness() / s.members.size();
 		}
 		ArrayList<NeuralNet> totOffspring = new ArrayList<NeuralNet>();
 		for (Species s : species) {
-			int num_offspring = (int) (popSize * s.getCombinedFitness() / totFitness);
+			int num_offspring = (int) (popSize * s.getCombinedFitness() / s.members.size() / totFitness);
 			ArrayList<NeuralNet> offspring = s.reproduce(num_offspring, r);
 			for (NeuralNet n : offspring) {
 				totOffspring.add(n);
@@ -178,7 +178,7 @@ class Species {
 				fitParents.add(n);
 			}
 			
-			for (int i = 0; i < newSize; i++) {
+			while (offspring.size() < newSize) {
 				int p1 = r.nextInt(fitParents.size());
 				int p2 = r.nextInt(fitParents.size() - 1);
 				if (p2 >= p1) {

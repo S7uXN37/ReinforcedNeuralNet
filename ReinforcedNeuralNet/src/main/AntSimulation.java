@@ -118,7 +118,7 @@ public class AntSimulation extends BasicGame {
 	// PRIVATE GRAPHICS VARS
 	private TrueTypeFont bckgFont;
 	private TrueTypeFont netFont;
-	private int netToDisplay = 1;
+	private int netToDisplay = -1;
 	
 	public AntSimulation(String title) {
 		super(title);

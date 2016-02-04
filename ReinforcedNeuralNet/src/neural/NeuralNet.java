@@ -15,7 +15,7 @@ public class NeuralNet {
 	
 	public HashMap<Integer, Neuron> neurons;
 	
-	private HashMap<Integer, ArrayList<Integer>> unconnectedNodes;
+	private HashMap<Integer, ArrayList<Integer>> unconnectableNodes;
 	private HashMap<Integer, Gene> innovGeneMap;
 	public ArrayList<Connection> connections;
 	
@@ -91,10 +91,10 @@ public class NeuralNet {
 	}
 	
 	private void computeNodeConnectionMap() {
-		unconnectedNodes = new HashMap<Integer, ArrayList<Integer>>();
+		unconnectableNodes = new HashMap<Integer, ArrayList<Integer>>();
 		
 		for (int id : neurons.keySet()) {
-			ArrayList<Integer> unconnected = new ArrayList<Integer>();
+			ArrayList<Integer> possibleNeighbours = new ArrayList<Integer>();
 			for (int idOther : neurons.keySet()) {
 				if (idOther != id) {
 					boolean foundConn = false;
@@ -108,13 +108,19 @@ public class NeuralNet {
 						}
 					}
 					
-					if (!foundConn) {
-						unconnected.add(idOther);
+					boolean forbidden = false;
+					if (idOther < INPUTS)
+						forbidden |= true;
+					if (id < (INPUTS + OUTPUTS) && id >= INPUTS)
+						forbidden |= true;
+					
+					if (!foundConn && !forbidden) {
+						possibleNeighbours.add(idOther);
 					}
 				}
 			}
 			
-			unconnectedNodes.put(id, unconnected);
+			unconnectableNodes.put(id, possibleNeighbours);
 		}
 	}
 	
@@ -183,11 +189,12 @@ public class NeuralNet {
 		Object[] keys = neurons.keySet().toArray();
 		int origin = (int) keys[r.nextInt(keys.length)];
 		
-		ArrayList<Integer> unconnected = unconnectedNodes.get(origin);
+		ArrayList<Integer> unconnected = unconnectableNodes.get(origin);
 		if (unconnected.size() == 0) {
 			boolean found = false;
 			for (int i = 0; i < keys.length; i++) {
-				unconnected = unconnectedNodes.get((int) keys[i]);
+				origin = (int) keys[i];
+				unconnected = unconnectableNodes.get(origin);
 				if (unconnected.size() > 0) {
 					found = true;
 					break;

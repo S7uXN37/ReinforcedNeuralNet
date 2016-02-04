@@ -45,7 +45,7 @@ public class AntSimulation extends BasicGame {
 	}
 	
 	public void OnClose() {
-		Diagram.setup("Gen", "Food", 0, 0, gen+2, 40, "Ants");
+		Diagram.setup("Gen", "Food", 1, 0, gen - 2, 40, "Ants", 2);
 		
 		double[] xAxis = new double[passedGenerations.size()];
 		for (int i = 0; i < xAxis.length; i++) {

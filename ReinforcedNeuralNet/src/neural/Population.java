@@ -101,6 +101,10 @@ public class Population {
 		mutate(r);
 		resetSpecies();
 		recalculateSpecies(false);
+		
+		for (NeuralNet n : population) {
+			n.fitness = 0;
+		}
 	}
 	
 	private void resetSpecies() {
@@ -149,6 +153,10 @@ class Species {
 	@SuppressWarnings("unchecked")
 	public ArrayList<NeuralNet> reproduce (int newSize, Random r) {
 		ArrayList<NeuralNet> offspring = new ArrayList<NeuralNet>();
+		
+		if (newSize <= 0)
+			return offspring;
+		
 		if (members.size() > 5) {
 			NeuralNet champ = members.get(0);
 			for (NeuralNet n : members) {

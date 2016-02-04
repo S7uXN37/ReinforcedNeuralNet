@@ -39,6 +39,28 @@ public class Diagram extends BasicGame
 		this.yRange = yRange;
 		channels = new ArrayList<Graph>();
 	}
+	
+	public static void main(String[] args) {
+		// TEST OUTPUT
+		double[] x = new double[600];
+		double[] fx = new double[x.length];
+		for (int i = 0; i < x.length; i++) {
+			x[i] = i * Math.PI * 4 / x.length - Math.PI * 2;
+			fx[i] = Math.sin(x[i]);
+		}
+
+		double[] px = new double[600];
+		double[] py = new double[x.length];
+		for (int i = 0; i < px.length; i++) {
+			double t = i * Math.PI * 2 / px.length;
+			px[i] = Math.sin(t);
+			py[i] = Math.cos(t);
+		}
+		
+		setup("x", "y", -Math.PI * 2, -1, Math.PI*4, 2, "TEST", 2);
+		addData(x, fx, Color.blue, "sin", 0);
+		addData(px, py, Color.red, "sin / cos", 1);
+	}
 
 	@Override
 	public void init(GameContainer gc) throws SlickException {	}
@@ -116,11 +138,26 @@ public class Diagram extends BasicGame
 	private static final Color TEXT_COLOR = Color.gray;
 	
 	private static Diagram diagram;
+	private static int numGraphs = 2;
 	
+	/**
+	 * Setup the Diagram, must be called before addData
+	 * @param xAxisName Label for x axis
+	 * @param yAxisName Label for y axis
+	 * @param xAxisOffset Starting value for x axis
+	 * @param yAxisOffset Starting value for y axis
+	 * @param xRange Range of x axis
+	 * @param yRange Range of y axis
+	 * @param title Title of Diagram
+	 * @param numChannels Intended number of channels to be used, for placing labels correctly
+	 * @return
+	 */
 	public static boolean setup(
 			String xAxisName, String yAxisName,
-			double xAxisOffset, double yAxisOffset, double xRange, double yRange, String title)
+			double xAxisOffset, double yAxisOffset, double xRange, double yRange, String title, int numChannels)
 	{
+		numGraphs = numChannels;
+		
 		if (diagram != null)
 			return false;
 		
@@ -169,6 +206,14 @@ public class Diagram extends BasicGame
 		return true;
 	}
 	
+	/**
+	 * Add new data to the graph
+	 * @param xAxisValues List of x values
+	 * @param yAxisValues Corresponding list of y values
+	 * @param color Color of the graph
+	 * @param graphName Label of the graph
+	 * @param channel Channel to use (0-based)
+	 */
 	public static void addData(double[] xAxisValues, double[] yAxisValues, Color color, String graphName, int channel) {
 		Line[] newLines = createLinesFromData(xAxisValues, yAxisValues, diagram.xAxisOffset, diagram.yAxisOffset, diagram.xRange, diagram.yRange, color);
 		if (newLines == null)
@@ -176,7 +221,7 @@ public class Diagram extends BasicGame
 		
 		Text[] newTexts = new Text[1];
 		for(int i=0;i<newTexts.length ;i++) {
-			newTexts[i] = new Text( new Point(channel*3*(ORIGIN.x + diagram.lines[0].p2.x)/4, ORIGIN.y-2*X_AXIS_LABEL_OFFSET), graphName, color);
+			newTexts[i] = new Text( new Point((channel + 1) * xAxisLength / (numGraphs+1) + ORIGIN.x, ORIGIN.y-2*X_AXIS_LABEL_OFFSET), graphName, color);
 		}
 		
 		Graph g = new Graph(newLines, newTexts);

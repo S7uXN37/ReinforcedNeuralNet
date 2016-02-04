@@ -1,6 +1,7 @@
 package neural;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Random;
 
 public class Population {
@@ -145,6 +146,7 @@ class Species {
 		return tot;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public ArrayList<NeuralNet> reproduce (int newSize, Random r) {
 		ArrayList<NeuralNet> offspring = new ArrayList<NeuralNet>();
 		if (members.size() > 5) {
@@ -158,13 +160,22 @@ class Species {
 		}
 		if (members.size() >= 2) {
 			ArrayList<NeuralNet> fitParents = new ArrayList<NeuralNet>();
-			double avgFitness = getCombinedFitness() / members.size();
-			for (double d = 0; fitParents.size() < 2; d += 0.1d) {
-				for (NeuralNet n : members) {
-					if (n.fitness >= avgFitness - d) {
-						fitParents.add(n);
-					}
+			// sort NeuralNets, best first
+			ArrayList<NeuralNet> sorted = (ArrayList<NeuralNet>) members.clone();
+			sorted.sort(new Comparator<NeuralNet>() {
+				@Override
+				public int compare(NeuralNet o1, NeuralNet o2) {
+					if (o1.fitness == o2.fitness)
+						return 0;
+					else
+						return o1.fitness > o2.fitness ? -1 : 1;
 				}
+			});
+			
+			// add organisms until 5 fit parents are found
+			for (int i = 0; i < sorted.size() && fitParents.size() < 5; i++) {
+				NeuralNet n = sorted.get(i);
+				fitParents.add(n);
 			}
 			
 			for (int i = 0; i < newSize; i++) {
@@ -182,7 +193,17 @@ class Species {
 				NeuralNet child = new NeuralNet(genome);
 				offspring.add(child);
 			}
+			
+
+			String s = "Species: ";
+			for (NeuralNet n : members)
+				s += ", "+n.fitness;
+			s += ", fitParents: ";
+			for (NeuralNet n : fitParents)
+				s += ", "+n.fitness;
+			System.out.println(s);
 		}
+		
 		return offspring;
 	}
 }

@@ -65,7 +65,7 @@ public class AntSimulation extends BasicGame {
 	
 	// PRIVATE SIM CONSTS
 	private static final int foodAmount = 200;
-	private static final float SIM_SPEED = 1f;
+	private static final float SIM_SPEED = 20f;
 	private static final float GEN_LENGTH = 20f;
 	
 	// PUBLIC GRAPHICS CONSTS
